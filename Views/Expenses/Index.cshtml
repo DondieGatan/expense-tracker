@@ -1,0 +1,48 @@
+@model IEnumerable<ExpenseTracker.Models.Expense>
+@{
+    ViewData["Title"] = "Expenses";
+    var categories = (string[])ViewBag.Categories;
+    var selected = (string?)ViewBag.SelectedCategory;
+}
+
+<div class="page-header">
+    <h1 class="page-title">Expenses</h1>
+    <a asp-action="Create" class="btn btn-primary">+ Add Expense</a>
+</div>
+
+<div class="filters">
+    <a asp-action="Index" class="filter-btn @(selected == null ? "active" : "")">All</a>
+    @foreach (var c in categories)
+    {
+        <a asp-action="Index" asp-route-category="@c" class="filter-btn @(selected == c ? "active" : "")">@c</a>
+    }
+</div>
+
+@if (Model.Any())
+{
+    <table class="data-table">
+        <thead>
+            <tr><th>Description</th><th>Category</th><th>Date</th><th>Payment</th><th>Amount</th><th></th></tr>
+        </thead>
+        <tbody>
+            @foreach (var e in Model)
+            {
+                <tr>
+                    <td>@e.Description</td>
+                    <td><span class="badge">@e.Category</span></td>
+                    <td>@e.Date.ToString("yyyy-MM-dd")</td>
+                    <td>@e.PaymentMethod</td>
+                    <td>@e.Amount.ToString("C")</td>
+                    <td class="actions">
+                        <a asp-action="Edit" asp-route-id="@e.Id" class="icon-btn">Edit</a>
+                        <a asp-action="Delete" asp-route-id="@e.Id" class="icon-btn delete">Delete</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p class="empty-state">No expenses found.</p>
+}

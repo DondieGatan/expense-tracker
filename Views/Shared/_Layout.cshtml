@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - ExpenseTracker</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <nav class="navbar">
+        <a class="brand" asp-controller="Expenses" asp-action="Dashboard">💵 ExpenseTracker</a>
+        <div class="nav-links">
+            <a asp-controller="Expenses" asp-action="Dashboard">Dashboard</a>
+            <a asp-controller="Expenses" asp-action="Index">Expenses</a>
+            <a asp-controller="Expenses" asp-action="Create">+ Add Expense</a>
+        </div>
+    </nav>
+
+    <main class="container">
+        @if (TempData["Message"] != null)
+        {
+            <div class="flash flash-success">@TempData["Message"]</div>
+        }
+        @RenderBody()
+    </main>
+
+    <footer class="footer">ExpenseTracker &copy; 2026 &mdash; Dondie Godwin Gatan</footer>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

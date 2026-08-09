@@ -1,0 +1,70 @@
+@model ExpenseTracker.Models.DashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard";
+    var maxCategoryTotal = Model.ByCategory.Any() ? Model.ByCategory.Max(c => c.Total) : 0m;
+}
+
+<h1 class="page-title">Dashboard</h1>
+
+<div class="stat-grid">
+    <div class="stat-card">
+        <span class="stat-value">@Model.TotalSpent.ToString("C")</span>
+        <span class="stat-label">Total Spent</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-value">@Model.ThisMonthTotal.ToString("C")</span>
+        <span class="stat-label">This Month</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-value">@Model.ExpenseCount</span>
+        <span class="stat-label">Total Expenses</span>
+    </div>
+</div>
+
+<div class="grid-2">
+    <div class="panel">
+        <h2>Recent Expenses</h2>
+        @if (Model.RecentExpenses.Any())
+        {
+            <table class="data-table">
+                <thead><tr><th>Description</th><th>Category</th><th>Date</th><th>Amount</th></tr></thead>
+                <tbody>
+                    @foreach (var e in Model.RecentExpenses)
+                    {
+                        <tr>
+                            <td>@e.Description</td>
+                            <td><span class="badge">@e.Category</span></td>
+                            <td>@e.Date.ToString("yyyy-MM-dd")</td>
+                            <td>@e.Amount.ToString("C")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <p class="empty-state">No expenses logged yet — <a asp-action="Create">add one</a>.</p>
+        }
+    </div>
+
+    <div class="panel">
+        <h2>By Category</h2>
+        @if (Model.ByCategory.Any())
+        {
+            @foreach (var c in Model.ByCategory)
+            {
+                <div class="category-row">
+                    <span>@c.Category</span>
+                    <div class="category-bar">
+                        <div class="category-bar-fill" style="width:@((maxCategoryTotal > 0 ? c.Total / maxCategoryTotal * 100 : 0).ToString("0"))%"></div>
+                    </div>
+                    <span>@c.Total.ToString("C")</span>
+                </div>
+            }
+        }
+        else
+        {
+            <p class="empty-state">No data yet.</p>
+        }
+    </div>
+</div>
