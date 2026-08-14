@@ -15,17 +15,62 @@ public class ExpensesController : Controller
     }
 
     // GET: /Expenses
-    public async Task<IActionResult> Index(string? category)
+    public async Task<IActionResult> Index(string? category, string? q, DateTime? from, DateTime? to)
     {
-        var query = _context.Expenses.AsQueryable();
-        if (!string.IsNullOrWhiteSpace(category))
-            query = query.Where(e => e.Category == category);
+        var query = ApplyFilters(_context.Expenses.AsQueryable(), category, q, from, to);
 
         ViewBag.Categories = ExpenseCategories.All;
         ViewBag.SelectedCategory = category;
+        ViewBag.Search = q;
+        ViewBag.From = from?.ToString("yyyy-MM-dd");
+        ViewBag.To = to?.ToString("yyyy-MM-dd");
 
         var expenses = await query.OrderByDescending(e => e.Date).ThenByDescending(e => e.Id).ToListAsync();
         return View(expenses);
+    }
+
+    private static IQueryable<Expense> ApplyFilters(IQueryable<Expense> query, string? category, string? q, DateTime? from, DateTime? to)
+    {
+        if (!string.IsNullOrWhiteSpace(category))
+            query = query.Where(e => e.Category == category);
+        if (!string.IsNullOrWhiteSpace(q))
+            query = query.Where(e => e.Description.Contains(q));
+        if (from.HasValue)
+            query = query.Where(e => e.Date >= from.Value);
+        if (to.HasValue)
+            query = query.Where(e => e.Date <= to.Value);
+        return query;
+    }
+
+    // GET: /Expenses/Export
+    public async Task<IActionResult> Export(string? category, string? q, DateTime? from, DateTime? to)
+    {
+        var expenses = await ApplyFilters(_context.Expenses.AsQueryable(), category, q, from, to)
+            .OrderByDescending(e => e.Date).ThenByDescending(e => e.Id)
+            .ToListAsync();
+
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("Description,Amount,Category,Date,PaymentMethod,Notes");
+        foreach (var e in expenses)
+        {
+            sb.AppendLine(string.Join(",",
+                CsvField(e.Description),
+                e.Amount.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                CsvField(e.Category),
+                e.Date.ToString("yyyy-MM-dd"),
+                CsvField(e.PaymentMethod),
+                CsvField(e.Notes ?? "")));
+        }
+
+        var bytes = System.Text.Encoding.UTF8.GetBytes(sb.ToString());
+        return File(bytes, "text/csv", $"expenses-{DateTime.Today:yyyy-MM-dd}.csv");
+    }
+
+    private static string CsvField(string value)
+    {
+        if (value.Contains(',') || value.Contains('"') || value.Contains('\n'))
+            return "\"" + value.Replace("\"", "\"\"") + "\"";
+        return value;
     }
 
     // GET: /Expenses/Create
@@ -115,6 +160,17 @@ public class ExpensesController : Controller
     {
         var all = await _context.Expenses.ToListAsync();
         var startOfMonth = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+        var budget = await _context.Budgets.FirstOrDefaultAsync();
+
+        var trendStart = startOfMonth.AddMonths(-5);
+        var monthlyTrend = Enumerable.Range(0, 6)
+            .Select(i => trendStart.AddMonths(i))
+            .Select(month => new MonthTotal
+            {
+                Label = month.ToString("MMM"),
+                Total = all.Where(e => e.Date.Year == month.Year && e.Date.Month == month.Month).Sum(e => e.Amount),
+            })
+            .ToList();
 
         var vm = new DashboardViewModel
         {
@@ -127,8 +183,42 @@ public class ExpensesController : Controller
                 .OrderByDescending(c => c.Total)
                 .ToList(),
             RecentExpenses = all.OrderByDescending(e => e.Date).ThenByDescending(e => e.Id).Take(5).ToList(),
+            MonthlyTrend = monthlyTrend,
+            BudgetLimit = budget?.MonthlyLimit,
         };
 
         return View(vm);
+    }
+
+    // GET: /Expenses/Budget
+    public async Task<IActionResult> Budget()
+    {
+        var budget = await _context.Budgets.FirstOrDefaultAsync();
+        return View(budget ?? new Budget());
+    }
+
+    // POST: /Expenses/Budget
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Budget([Bind("Id,MonthlyLimit")] Budget budget)
+    {
+        if (!ModelState.IsValid)
+        {
+            return View(budget);
+        }
+
+        var existing = await _context.Budgets.FirstOrDefaultAsync();
+        if (existing is null)
+        {
+            _context.Budgets.Add(new Budget { MonthlyLimit = budget.MonthlyLimit });
+        }
+        else
+        {
+            existing.MonthlyLimit = budget.MonthlyLimit;
+        }
+
+        await _context.SaveChangesAsync();
+        TempData["Message"] = "Budget updated.";
+        return RedirectToAction(nameof(Dashboard));
     }
 }

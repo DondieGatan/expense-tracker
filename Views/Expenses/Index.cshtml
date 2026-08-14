@@ -3,18 +3,36 @@
     ViewData["Title"] = "Expenses";
     var categories = (string[])ViewBag.Categories;
     var selected = (string?)ViewBag.SelectedCategory;
+    var search = (string?)ViewBag.Search;
+    var from = (string?)ViewBag.From;
+    var to = (string?)ViewBag.To;
 }
 
 <div class="page-header">
     <h1 class="page-title">Expenses</h1>
-    <a asp-action="Create" class="btn btn-primary">+ Add Expense</a>
+    <div class="actions">
+        <a asp-action="Export" asp-route-category="@selected" asp-route-q="@search" asp-route-from="@from" asp-route-to="@to" class="btn btn-ghost">Export CSV</a>
+        <a asp-action="Create" class="btn btn-primary">+ Add Expense</a>
+    </div>
 </div>
 
+<form method="get" class="search-bar">
+    <input type="text" name="q" value="@search" placeholder="Search by description…">
+    <input type="date" name="from" value="@from" title="From date">
+    <input type="date" name="to" value="@to" title="To date">
+    <input type="hidden" name="category" value="@selected">
+    <button type="submit" class="btn btn-ghost">Search</button>
+    @if (!string.IsNullOrEmpty(search) || !string.IsNullOrEmpty(from) || !string.IsNullOrEmpty(to))
+    {
+        <a asp-action="Index" asp-route-category="@selected" class="btn btn-ghost">Clear</a>
+    }
+</form>
+
 <div class="filters">
-    <a asp-action="Index" class="filter-btn @(selected == null ? "active" : "")">All</a>
+    <a asp-action="Index" asp-route-q="@search" asp-route-from="@from" asp-route-to="@to" class="filter-btn @(selected == null ? "active" : "")">All</a>
     @foreach (var c in categories)
     {
-        <a asp-action="Index" asp-route-category="@c" class="filter-btn @(selected == c ? "active" : "")">@c</a>
+        <a asp-action="Index" asp-route-category="@c" asp-route-q="@search" asp-route-from="@from" asp-route-to="@to" class="filter-btn @(selected == c ? "active" : "")">@c</a>
     }
 </div>
 
@@ -44,5 +62,16 @@
 }
 else
 {
-    <p class="empty-state">No expenses found.</p>
+    var hasFilters = selected != null || !string.IsNullOrEmpty(search) || !string.IsNullOrEmpty(from) || !string.IsNullOrEmpty(to);
+    <div class="empty-state">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        @if (hasFilters)
+        {
+            <p>No expenses match your filters.</p>
+        }
+        else
+        {
+            <p>No expenses logged yet — <a asp-action="Create">add one</a>.</p>
+        }
+    </div>
 }

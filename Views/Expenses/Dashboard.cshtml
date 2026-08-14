@@ -1,7 +1,11 @@
+@using System.Text.Json
 @model ExpenseTracker.Models.DashboardViewModel
 @{
     ViewData["Title"] = "Dashboard";
-    var maxCategoryTotal = Model.ByCategory.Any() ? Model.ByCategory.Max(c => c.Total) : 0m;
+    var categoryLabels = JsonSerializer.Serialize(Model.ByCategory.Select(c => c.Category));
+    var categoryTotals = JsonSerializer.Serialize(Model.ByCategory.Select(c => c.Total));
+    var trendLabels = JsonSerializer.Serialize(Model.MonthlyTrend.Select(m => m.Label));
+    var trendTotals = JsonSerializer.Serialize(Model.MonthlyTrend.Select(m => m.Total));
 }
 
 <h1 class="page-title">Dashboard</h1>
@@ -19,6 +23,32 @@
         <span class="stat-value">@Model.ExpenseCount</span>
         <span class="stat-label">Total Expenses</span>
     </div>
+</div>
+
+<div class="panel">
+    <div class="panel-header">
+        <h2>Monthly Budget</h2>
+        <a asp-action="Budget" class="btn btn-small btn-ghost">@(Model.BudgetLimit.HasValue ? "Edit" : "Set Budget")</a>
+    </div>
+    @if (Model.BudgetLimit.HasValue)
+    {
+        var pct = Math.Min(Model.BudgetPercentUsed, 100);
+        var overBudget = Model.BudgetRemaining < 0;
+        var barClass = Model.BudgetPercentUsed >= 100 ? "danger" : Model.BudgetPercentUsed >= 75 ? "warn" : "ok";
+        <div class="budget-bar">
+            <div class="budget-bar-fill budget-@barClass" style="width:@(pct)%"></div>
+        </div>
+        <div class="budget-meta">
+            <span>@Model.ThisMonthTotal.ToString("C") of @Model.BudgetLimit.Value.ToString("C") (@Model.BudgetPercentUsed%)</span>
+            <span class="@(overBudget ? "budget-over" : "")">
+                @(overBudget ? $"{Math.Abs(Model.BudgetRemaining):C} over budget" : $"{Model.BudgetRemaining:C} remaining")
+            </span>
+        </div>
+    }
+    else
+    {
+        <p class="empty-state-inline">No budget set yet — <a asp-action="Budget">set a monthly limit</a> to track your spending against it.</p>
+    }
 </div>
 
 <div class="grid-2">
@@ -43,7 +73,10 @@
         }
         else
         {
-            <p class="empty-state">No expenses logged yet — <a asp-action="Create">add one</a>.</p>
+            <div class="empty-state">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+                <p>No expenses logged yet — <a asp-action="Create">add one</a>.</p>
+            </div>
         }
     </div>
 
@@ -51,20 +84,71 @@
         <h2>By Category</h2>
         @if (Model.ByCategory.Any())
         {
-            @foreach (var c in Model.ByCategory)
-            {
-                <div class="category-row">
-                    <span>@c.Category</span>
-                    <div class="category-bar">
-                        <div class="category-bar-fill" style="width:@((maxCategoryTotal > 0 ? c.Total / maxCategoryTotal * 100 : 0).ToString("0"))%"></div>
-                    </div>
-                    <span>@c.Total.ToString("C")</span>
-                </div>
-            }
+            <div class="chart-wrap chart-wrap-donut"><canvas id="categoryChart"></canvas></div>
         }
         else
         {
-            <p class="empty-state">No data yet.</p>
+            <div class="empty-state">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+                <p>No data yet.</p>
+            </div>
         }
     </div>
 </div>
+
+<div class="panel">
+    <h2>Spending Trend — Last 6 Months</h2>
+    <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+    <script>
+        const chartTextColor = getComputedStyle(document.body).getPropertyValue('--text-muted').trim();
+        const chartGridColor = getComputedStyle(document.body).getPropertyValue('--border').trim();
+        Chart.defaults.color = chartTextColor;
+        Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
+
+        const categoryLabels = @Html.Raw(categoryLabels);
+        const categoryTotals = @Html.Raw(categoryTotals);
+        if (categoryLabels.length > 0) {
+            new Chart(document.getElementById('categoryChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: categoryLabels,
+                    datasets: [{
+                        data: categoryTotals,
+                        backgroundColor: ['#2fb380', '#3d9bf0', '#e8a33d', '#f15b6c', '#a78dd6', '#5bc9c9', '#e88fc0', '#c9c15b', '#8f9bd6', '#d68f5b'],
+                        borderWidth: 0,
+                    }],
+                },
+                options: {
+                    plugins: { legend: { position: 'right', labels: { boxWidth: 12, padding: 14 } } },
+                },
+            });
+        }
+
+        const trendLabels = @Html.Raw(trendLabels);
+        const trendTotals = @Html.Raw(trendTotals);
+        new Chart(document.getElementById('trendChart'), {
+            type: 'bar',
+            data: {
+                labels: trendLabels,
+                datasets: [{
+                    label: 'Spent',
+                    data: trendTotals,
+                    backgroundColor: '#2fb380',
+                    borderRadius: 4,
+                    maxBarThickness: 40,
+                }],
+            },
+            options: {
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: chartGridColor } },
+                    x: { grid: { display: false } },
+                },
+            },
+        });
+    </script>
+}

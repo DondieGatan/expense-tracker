@@ -7,12 +7,20 @@
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
 <body>
+    @{
+        var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+    }
     <nav class="navbar">
-        <a class="brand" asp-controller="Expenses" asp-action="Dashboard">💵 ExpenseTracker</a>
+        <a class="brand" asp-controller="Expenses" asp-action="Dashboard">
+            <span class="brand-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
+            </span>
+            ExpenseTracker
+        </a>
         <div class="nav-links">
-            <a asp-controller="Expenses" asp-action="Dashboard">Dashboard</a>
-            <a asp-controller="Expenses" asp-action="Index">Expenses</a>
-            <a asp-controller="Expenses" asp-action="Create">+ Add Expense</a>
+            <a asp-controller="Expenses" asp-action="Dashboard" class="@(currentAction == "Dashboard" ? "active" : "")">Dashboard</a>
+            <a asp-controller="Expenses" asp-action="Index" class="@(currentAction == "Index" ? "active" : "")">Expenses</a>
+            <a asp-controller="Expenses" asp-action="Create" class="btn btn-primary btn-small">+ Add Expense</a>
         </div>
     </nav>
 

@@ -8,4 +8,5 @@ public class ApplicationDbContext : DbContext
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
     public DbSet<Expense> Expenses => Set<Expense>();
+    public DbSet<Budget> Budgets => Set<Budget>();
 }

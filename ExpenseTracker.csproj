@@ -7,6 +7,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="ExpenseTracker.Tests\**" />
+    <Content Remove="ExpenseTracker.Tests\**" />
+    <EmbeddedResource Remove="ExpenseTracker.Tests\**" />
+    <None Remove="ExpenseTracker.Tests\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.11">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
