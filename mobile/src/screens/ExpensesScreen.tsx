@@ -1,13 +1,15 @@
 import React, { useCallback, useState } from 'react';
 import {
-  View, Text, StyleSheet, TextInput, TouchableOpacity, FlatList,
+  View, Text, StyleSheet, TextInput, FlatList,
   ActivityIndicator, Alert,
 } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import Animated, { FadeInRight, FadeInDown, Layout } from 'react-native-reanimated';
 import { colors } from '../theme/colors';
 import { api } from '../api/client';
 import { EXPENSE_CATEGORIES } from '../theme/constants';
 import TxnRow from '../components/TxnRow';
+import AnimatedPressable from '../components/AnimatedPressable';
 import { SearchIcon, TrashIcon } from '../components/icons';
 import type { Expense } from '../api/types';
 
@@ -76,16 +78,19 @@ export default function ExpensesScreen() {
         contentContainerStyle={styles.filtersContent}
         data={['All', ...EXPENSE_CATEGORIES]}
         keyExtractor={(item) => item}
-        renderItem={({ item }) => {
+        renderItem={({ item, index }) => {
           const value = item === 'All' ? null : item;
           const active = category === value;
           return (
-            <TouchableOpacity
-              style={[styles.filterChip, active && styles.filterChipActive]}
-              onPress={() => setCategory(value)}
-            >
-              <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{item}</Text>
-            </TouchableOpacity>
+            <Animated.View entering={FadeInDown.duration(350).delay(index * 30)}>
+              <AnimatedPressable
+                scaleTo={0.92}
+                style={[styles.filterChip, active && styles.filterChipActive]}
+                onPress={() => setCategory(value)}
+              >
+                <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{item}</Text>
+              </AnimatedPressable>
+            </Animated.View>
           );
         }}
       />
@@ -98,18 +103,23 @@ export default function ExpensesScreen() {
           keyExtractor={(item) => String(item.id)}
           contentContainerStyle={styles.list}
           ListEmptyComponent={<Text style={styles.emptyText}>No expenses match your filters.</Text>}
-          renderItem={({ item }) => (
-            <View style={styles.row}>
-              <TouchableOpacity
+          renderItem={({ item, index }) => (
+            <Animated.View
+              entering={FadeInRight.duration(350).delay(Math.min(index, 8) * 50)}
+              layout={Layout.springify()}
+              style={styles.row}
+            >
+              <AnimatedPressable
+                scaleTo={0.98}
                 style={styles.rowMain}
                 onPress={() => navigation.navigate('ExpenseForm', { expenseId: item.id })}
               >
                 <TxnRow expense={item} subtitleExtra={item.paymentMethod} />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.deleteBtn} onPress={() => onDelete(item.id, item.description)}>
+              </AnimatedPressable>
+              <AnimatedPressable style={styles.deleteBtn} onPress={() => onDelete(item.id, item.description)}>
                 <TrashIcon size={16} color={colors.danger} />
-              </TouchableOpacity>
-            </View>
+              </AnimatedPressable>
+            </Animated.View>
           )}
         />
       )}

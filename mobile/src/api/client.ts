@@ -12,6 +12,12 @@ function resolveApiBase(): string {
   // On web, the browser and the API share the same machine.
   if (Platform.OS === 'web') return `http://localhost:${API_PORT}/api`;
 
+  // The Android emulator has a standard alias (10.0.2.2) that always maps
+  // to the host machine's localhost — more reliable than LAN-IP detection
+  // for emulator networking specifically. A physical Android device can't
+  // reach 10.0.2.2, but for those, set EXPO_PUBLIC_API_URL explicitly.
+  if (Platform.OS === 'android' && __DEV__) return `http://10.0.2.2:${API_PORT}/api`;
+
   // On a physical device / simulator (Expo Go), "localhost" refers to the
   // device itself, not the dev machine — derive the dev machine's LAN IP
   // from the Metro bundler's own host address instead.

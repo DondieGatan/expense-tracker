@@ -4,9 +4,11 @@ import {
   KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import Animated, { FadeInUp, FadeIn } from 'react-native-reanimated';
 import { colors } from '../theme/colors';
 import { useAuth } from '../context/AuthContext';
-import { MailIcon, LockIcon, EyeIcon, UserIcon } from '../components/icons';
+import { MailIcon, LockIcon, EyeIcon, UserIcon, LogoMarkIcon } from '../components/icons';
+import AnimatedPressable from '../components/AnimatedPressable';
 import type { AuthStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Register'>;
@@ -34,14 +36,14 @@ export default function RegisterScreen({ navigation }: Props) {
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.card}>
-          <View style={styles.logo}>
+        <Animated.View entering={FadeInUp.duration(500).springify().damping(16)} style={styles.card}>
+          <Animated.View entering={FadeIn.duration(500).delay(100)} style={styles.logo}>
             <View style={styles.logoIcon}>
-              <Text style={styles.logoIconText}>$</Text>
+              <LogoMarkIcon size={22} color={colors.accentContrast} />
             </View>
             <Text style={styles.title}>Create your account</Text>
             <Text style={styles.subtitle}>Start tracking your spending in minutes.</Text>
-          </View>
+          </Animated.View>
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -84,7 +86,7 @@ export default function RegisterScreen({ navigation }: Props) {
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity
+          <AnimatedPressable
             style={[styles.button, submitting && styles.buttonDisabled]}
             onPress={onSubmit}
             disabled={submitting || !fullName || !email || password.length < 6}
@@ -94,7 +96,7 @@ export default function RegisterScreen({ navigation }: Props) {
             ) : (
               <Text style={styles.buttonText}>Create Account</Text>
             )}
-          </TouchableOpacity>
+          </AnimatedPressable>
 
           <View style={styles.footerRow}>
             <Text style={styles.footerText}>Already have an account? </Text>
@@ -102,7 +104,7 @@ export default function RegisterScreen({ navigation }: Props) {
               <Text style={styles.footerLink}>Sign in</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </Animated.View>
       </ScrollView>
     </KeyboardAvoidingView>
   );

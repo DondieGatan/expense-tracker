@@ -1,11 +1,16 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, useWindowDimensions, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, useWindowDimensions, ActivityIndicator } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { PieChart, BarChart } from 'react-native-chart-kit';
+import { LinearGradient } from 'expo-linear-gradient';
+import Animated, { FadeInDown, FadeInUp, FadeInRight } from 'react-native-reanimated';
 import { colors, categoryChartColors } from '../theme/colors';
 import { api } from '../api/client';
 import { formatCurrency } from '../utils/format';
+import { useCountUp } from '../utils/useCountUp';
 import TxnRow from '../components/TxnRow';
+import PulseGlow from '../components/PulseGlow';
+import AnimatedPressable from '../components/AnimatedPressable';
 import { ArrowUpIcon, ArrowDownIcon, BudgetIcon } from '../components/icons';
 import type { DashboardData } from '../api/types';
 
@@ -47,6 +52,8 @@ export default function DashboardScreen() {
     load();
   };
 
+  const animatedThisMonth = useCountUp(data?.thisMonthTotal ?? 0);
+
   if (loading || !data) {
     return (
       <View style={styles.loadingContainer}>
@@ -77,40 +84,48 @@ export default function DashboardScreen() {
       contentContainerStyle={styles.container}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
     >
-      <Text style={styles.pageTitle}>Dashboard</Text>
+      <Animated.Text entering={FadeInDown.duration(400)} style={styles.pageTitle}>Dashboard</Animated.Text>
 
-      <View style={styles.balanceCard}>
-        <Text style={styles.balanceLabel}>THIS MONTH</Text>
-        <Text style={styles.balanceValue}>{formatCurrency(data.thisMonthTotal)}</Text>
+      <Animated.View entering={FadeInDown.duration(500).delay(60)} style={styles.balanceCardWrap}>
+        <PulseGlow color={colors.accent} size={140} style={styles.balanceGlow} />
+        <LinearGradient
+          colors={[colors.accent, colors.accentStrong]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.balanceCard}
+        >
+          <Text style={styles.balanceLabel}>THIS MONTH</Text>
+          <Text style={styles.balanceValue}>{formatCurrency(animatedThisMonth)}</Text>
 
-        {data.budgetLimit != null ? (
-          <View style={styles.balanceStats}>
-            <View style={styles.balanceStat}>
-              <View style={styles.balanceStatIcon}><BudgetIcon size={14} color={colors.accentContrast} /></View>
-              <View>
-                <Text style={styles.balanceStatLabel}>Budget</Text>
-                <Text style={styles.balanceStatValue}>{formatCurrency(data.budgetLimit)}</Text>
+          {data.budgetLimit != null ? (
+            <View style={styles.balanceStats}>
+              <View style={styles.balanceStat}>
+                <View style={styles.balanceStatIcon}><BudgetIcon size={14} color={colors.accentContrast} /></View>
+                <View>
+                  <Text style={styles.balanceStatLabel}>Budget</Text>
+                  <Text style={styles.balanceStatValue}>{formatCurrency(data.budgetLimit)}</Text>
+                </View>
+              </View>
+              <View style={[styles.balanceStat, overBudget && styles.balanceStatNegative]}>
+                <View style={[styles.balanceStatIcon, overBudget && styles.balanceStatIconNegative]}>
+                  {overBudget ? <ArrowUpIcon size={14} color={colors.accentContrast} /> : <ArrowDownIcon size={14} color={colors.accentContrast} />}
+                </View>
+                <View>
+                  <Text style={styles.balanceStatLabel}>{overBudget ? 'Over budget' : 'Remaining'}</Text>
+                  <Text style={styles.balanceStatValue}>{formatCurrency(Math.abs(remaining ?? 0))}</Text>
+                </View>
               </View>
             </View>
-            <View style={[styles.balanceStat, overBudget && styles.balanceStatNegative]}>
-              <View style={[styles.balanceStatIcon, overBudget && styles.balanceStatIconNegative]}>
-                {overBudget ? <ArrowUpIcon size={14} color={colors.accentContrast} /> : <ArrowDownIcon size={14} color={colors.accentContrast} />}
-              </View>
-              <View>
-                <Text style={styles.balanceStatLabel}>{overBudget ? 'Over budget' : 'Remaining'}</Text>
-                <Text style={styles.balanceStatValue}>{formatCurrency(Math.abs(remaining ?? 0))}</Text>
-              </View>
-            </View>
-          </View>
-        ) : (
-          <TouchableOpacity style={styles.balanceEmpty} onPress={() => navigation.navigate('Budget')}>
-            <Text style={styles.balanceEmptyText}>No budget set yet</Text>
-            <Text style={styles.balanceEmptyLink}>Set a monthly budget →</Text>
-          </TouchableOpacity>
-        )}
-      </View>
+          ) : (
+            <AnimatedPressable style={styles.balanceEmpty} onPress={() => navigation.navigate('Budget')}>
+              <Text style={styles.balanceEmptyText}>No budget set yet</Text>
+              <Text style={styles.balanceEmptyLink}>Set a monthly budget →</Text>
+            </AnimatedPressable>
+          )}
+        </LinearGradient>
+      </Animated.View>
 
-      <View style={styles.statGrid}>
+      <Animated.View entering={FadeInDown.duration(500).delay(120)} style={styles.statGrid}>
         <View style={styles.statCard}>
           <Text style={styles.statValue}>{formatCurrency(data.totalSpent)}</Text>
           <Text style={styles.statLabel}>Total Spent (All Time)</Text>
@@ -119,23 +134,27 @@ export default function DashboardScreen() {
           <Text style={styles.statValue}>{data.expenseCount}</Text>
           <Text style={styles.statLabel}>Total Expenses</Text>
         </View>
-      </View>
+      </Animated.View>
 
-      <View style={styles.panel}>
+      <Animated.View entering={FadeInDown.duration(500).delay(180)} style={styles.panel}>
         <View style={styles.panelHeader}>
           <Text style={styles.panelTitle}>Recent Expenses</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Expenses')}>
+          <AnimatedPressable onPress={() => navigation.navigate('Expenses')}>
             <Text style={styles.panelLink}>See all →</Text>
-          </TouchableOpacity>
+          </AnimatedPressable>
         </View>
         {data.recentExpenses.length ? (
-          data.recentExpenses.map((e) => <TxnRow key={e.id} expense={e} />)
+          data.recentExpenses.map((e, i) => (
+            <Animated.View key={e.id} entering={FadeInRight.duration(400).delay(220 + i * 60)}>
+              <TxnRow expense={e} />
+            </Animated.View>
+          ))
         ) : (
           <Text style={styles.emptyText}>No expenses logged yet.</Text>
         )}
-      </View>
+      </Animated.View>
 
-      <View style={styles.panel}>
+      <Animated.View entering={FadeInUp.duration(500).delay(240)} style={styles.panel}>
         <Text style={styles.panelTitle}>By Category</Text>
         {pieData.length ? (
           <PieChart
@@ -150,9 +169,9 @@ export default function DashboardScreen() {
         ) : (
           <Text style={styles.emptyText}>No data yet.</Text>
         )}
-      </View>
+      </Animated.View>
 
-      <View style={styles.panel}>
+      <Animated.View entering={FadeInUp.duration(500).delay(300)} style={styles.panel}>
         <Text style={styles.panelTitle}>Spending Trend — Last 6 Months</Text>
         <BarChart
           data={barData}
@@ -162,11 +181,11 @@ export default function DashboardScreen() {
           fromZero
           withInnerLines={false}
           showValuesOnTopOfBars
-          yAxisLabel="$"
+          yAxisLabel=""
           yAxisSuffix=""
           style={{ marginLeft: -16 }}
         />
-      </View>
+      </Animated.View>
     </ScrollView>
   );
 }
@@ -176,7 +195,9 @@ const styles = StyleSheet.create({
   loadingContainer: { flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' },
   container: { padding: 20, paddingBottom: 100 },
   pageTitle: { color: colors.text, fontSize: 22, fontWeight: '700', marginBottom: 16 },
-  balanceCard: { backgroundColor: colors.accent, borderRadius: 22, padding: 22, marginBottom: 16 },
+  balanceCardWrap: { marginBottom: 16 },
+  balanceGlow: { top: -30, right: -20 },
+  balanceCard: { borderRadius: 22, padding: 22, overflow: 'hidden' },
   balanceLabel: { color: colors.accentContrast, opacity: 0.75, fontSize: 11, fontWeight: '700', letterSpacing: 1 },
   balanceValue: { color: colors.accentContrast, fontSize: 32, fontWeight: '800', marginTop: 4, marginBottom: 16 },
   balanceStats: { flexDirection: 'row', gap: 10 },

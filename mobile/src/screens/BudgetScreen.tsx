@@ -1,8 +1,10 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, StyleSheet, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { colors } from '../theme/colors';
 import { api, ApiError } from '../api/client';
+import AnimatedPressable from '../components/AnimatedPressable';
 
 export default function BudgetScreen() {
   const [monthlyLimit, setMonthlyLimit] = useState('');
@@ -50,7 +52,7 @@ export default function BudgetScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <Animated.View entering={FadeInDown.duration(450)} style={styles.container}>
       <Text style={styles.pageTitle}>Set Monthly Budget</Text>
 
       {saved ? <Text style={styles.success}>Budget updated.</Text> : null}
@@ -66,14 +68,14 @@ export default function BudgetScreen() {
         onChangeText={(v) => { setMonthlyLimit(v); setSaved(false); }}
       />
 
-      <TouchableOpacity
+      <AnimatedPressable
         style={[styles.button, submitting && styles.buttonDisabled]}
         onPress={onSubmit}
         disabled={submitting || !monthlyLimit}
       >
         {submitting ? <ActivityIndicator color={colors.accentContrast} /> : <Text style={styles.buttonText}>Save Budget</Text>}
-      </TouchableOpacity>
-    </View>
+      </AnimatedPressable>
+    </Animated.View>
   );
 }
 

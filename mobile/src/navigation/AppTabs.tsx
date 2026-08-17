@@ -1,12 +1,15 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { createBottomTabNavigator, BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '../theme/colors';
 import { useAuth } from '../context/AuthContext';
 import DashboardScreen from '../screens/DashboardScreen';
 import ExpensesScreen from '../screens/ExpensesScreen';
 import BudgetScreen from '../screens/BudgetScreen';
 import { HomeIcon, HistoryIcon, BudgetIcon, PlusIcon, LogoutIcon } from '../components/icons';
+import AnimatedPressable from '../components/AnimatedPressable';
+import PulseGlow from '../components/PulseGlow';
 import type { TabParamList } from './types';
 
 const Tab = createBottomTabNavigator<TabParamList>();
@@ -33,33 +36,38 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
         const focused = state.index === index;
         const color = focused ? colors.accent : colors.textMuted;
         return (
-          <TouchableOpacity key={route.key} style={styles.item} onPress={() => navigation.navigate(route.name)}>
+          <AnimatedPressable key={route.key} style={styles.item} onPress={() => navigation.navigate(route.name)}>
             {TAB_ICONS[route.name](color)}
             <Text style={[styles.itemLabel, { color }]}>{TAB_LABELS[route.name]}</Text>
-          </TouchableOpacity>
+          </AnimatedPressable>
         );
       })}
 
-      <TouchableOpacity style={styles.fab} onPress={() => parent?.navigate('ExpenseForm')}>
-        <PlusIcon size={22} color={colors.accentContrast} />
-      </TouchableOpacity>
+      <View style={styles.fabWrap}>
+        <PulseGlow color={colors.accent} size={64} style={styles.fabGlow} />
+        <AnimatedPressable scaleTo={0.88} onPress={() => parent?.navigate('ExpenseForm')}>
+          <LinearGradient colors={[colors.accent, colors.accentStrong]} style={styles.fab}>
+            <PlusIcon size={22} color={colors.accentContrast} />
+          </LinearGradient>
+        </AnimatedPressable>
+      </View>
 
       {state.routes.slice(2).map((route) => {
         const index = state.routes.indexOf(route);
         const focused = state.index === index;
         const color = focused ? colors.accent : colors.textMuted;
         return (
-          <TouchableOpacity key={route.key} style={styles.item} onPress={() => navigation.navigate(route.name)}>
+          <AnimatedPressable key={route.key} style={styles.item} onPress={() => navigation.navigate(route.name)}>
             {TAB_ICONS[route.name](color)}
             <Text style={[styles.itemLabel, { color }]}>{TAB_LABELS[route.name]}</Text>
-          </TouchableOpacity>
+          </AnimatedPressable>
         );
       })}
 
-      <TouchableOpacity style={styles.item} onPress={logout}>
+      <AnimatedPressable style={styles.item} onPress={logout}>
         <LogoutIcon size={20} color={colors.textMuted} />
         <Text style={[styles.itemLabel, { color: colors.textMuted }]}>Logout</Text>
-      </TouchableOpacity>
+      </AnimatedPressable>
     </View>
   );
 }
@@ -82,9 +90,11 @@ const styles = StyleSheet.create({
   },
   item: { alignItems: 'center', gap: 2, paddingHorizontal: 6 },
   itemLabel: { fontSize: 10, fontWeight: '600' },
+  fabWrap: { alignItems: 'center', justifyContent: 'center', marginTop: -26 },
+  fabGlow: { top: -7, left: -7 },
   fab: {
-    width: 50, height: 50, borderRadius: 999, backgroundColor: colors.accent,
-    alignItems: 'center', justifyContent: 'center', marginTop: -26,
+    width: 50, height: 50, borderRadius: 999,
+    alignItems: 'center', justifyContent: 'center',
     borderWidth: 4, borderColor: colors.bg,
   },
 });

@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet,
+  View, Text, TextInput, StyleSheet,
   ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { colors } from '../theme/colors';
 import { api, ApiError } from '../api/client';
 import { EXPENSE_CATEGORIES, PAYMENT_METHODS } from '../theme/constants';
 import { BackIcon } from '../components/icons';
+import AnimatedPressable from '../components/AnimatedPressable';
 import type { AppStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'ExpenseForm'>;
@@ -77,12 +79,12 @@ export default function ExpenseFormScreen({ route, navigation }: Props) {
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.headerRow}>
-          <TouchableOpacity style={styles.backLink} onPress={() => navigation.goBack()}>
+        <Animated.View entering={FadeIn.duration(350)} style={styles.headerRow}>
+          <AnimatedPressable style={styles.backLink} onPress={() => navigation.goBack()}>
             <BackIcon size={16} color={colors.text} />
-          </TouchableOpacity>
+          </AnimatedPressable>
           <Text style={styles.pageTitle}>{isEdit ? 'Edit Expense' : 'Add Expense'}</Text>
-        </View>
+        </Animated.View>
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -120,30 +122,32 @@ export default function ExpenseFormScreen({ route, navigation }: Props) {
         </View>
 
         <Text style={styles.label}>Category</Text>
-        <View style={styles.chipGroup}>
+        <Animated.View entering={FadeInDown.duration(400).delay(60)} style={styles.chipGroup}>
           {EXPENSE_CATEGORIES.map((c) => (
-            <TouchableOpacity
+            <AnimatedPressable
               key={c}
+              scaleTo={0.92}
               style={[styles.chip, category === c && styles.chipActive]}
               onPress={() => setCategory(c)}
             >
               <Text style={[styles.chipText, category === c && styles.chipTextActive]}>{c}</Text>
-            </TouchableOpacity>
+            </AnimatedPressable>
           ))}
-        </View>
+        </Animated.View>
 
         <Text style={styles.label}>Payment Method</Text>
-        <View style={styles.chipGroup}>
+        <Animated.View entering={FadeInDown.duration(400).delay(100)} style={styles.chipGroup}>
           {PAYMENT_METHODS.map((p) => (
-            <TouchableOpacity
+            <AnimatedPressable
               key={p}
+              scaleTo={0.92}
               style={[styles.chip, paymentMethod === p && styles.chipActive]}
               onPress={() => setPaymentMethod(p)}
             >
               <Text style={[styles.chipText, paymentMethod === p && styles.chipTextActive]}>{p}</Text>
-            </TouchableOpacity>
+            </AnimatedPressable>
           ))}
-        </View>
+        </Animated.View>
 
         <Text style={styles.label}>Notes</Text>
         <TextInput
@@ -156,7 +160,7 @@ export default function ExpenseFormScreen({ route, navigation }: Props) {
           numberOfLines={3}
         />
 
-        <TouchableOpacity
+        <AnimatedPressable
           style={[styles.button, submitting && styles.buttonDisabled]}
           onPress={onSubmit}
           disabled={submitting || !description || !amount}
@@ -166,7 +170,7 @@ export default function ExpenseFormScreen({ route, navigation }: Props) {
           ) : (
             <Text style={styles.buttonText}>{isEdit ? 'Save Changes' : 'Add Expense'}</Text>
           )}
-        </TouchableOpacity>
+        </AnimatedPressable>
       </ScrollView>
     </KeyboardAvoidingView>
   );

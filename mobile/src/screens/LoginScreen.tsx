@@ -4,9 +4,11 @@ import {
   KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import Animated, { FadeInUp, FadeIn } from 'react-native-reanimated';
 import { colors } from '../theme/colors';
 import { useAuth } from '../context/AuthContext';
-import { MailIcon, LockIcon, EyeIcon } from '../components/icons';
+import { MailIcon, LockIcon, EyeIcon, LogoMarkIcon } from '../components/icons';
+import AnimatedPressable from '../components/AnimatedPressable';
 import type { AuthStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
@@ -33,14 +35,14 @@ export default function LoginScreen({ navigation }: Props) {
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.card}>
-          <View style={styles.logo}>
+        <Animated.View entering={FadeInUp.duration(500).springify().damping(16)} style={styles.card}>
+          <Animated.View entering={FadeIn.duration(500).delay(100)} style={styles.logo}>
             <View style={styles.logoIcon}>
-              <Text style={styles.logoIconText}>$</Text>
+              <LogoMarkIcon size={22} color={colors.accentContrast} />
             </View>
             <Text style={styles.title}>ExpenseTracker</Text>
             <Text style={styles.subtitle}>Track every expense, stay in control.</Text>
-          </View>
+          </Animated.View>
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -72,7 +74,7 @@ export default function LoginScreen({ navigation }: Props) {
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity
+          <AnimatedPressable
             style={[styles.button, submitting && styles.buttonDisabled]}
             onPress={onSubmit}
             disabled={submitting || !email || !password}
@@ -82,7 +84,7 @@ export default function LoginScreen({ navigation }: Props) {
             ) : (
               <Text style={styles.buttonText}>Sign In</Text>
             )}
-          </TouchableOpacity>
+          </AnimatedPressable>
 
           <View style={styles.footerRow}>
             <Text style={styles.footerText}>Don&apos;t have an account? </Text>
@@ -90,7 +92,7 @@ export default function LoginScreen({ navigation }: Props) {
               <Text style={styles.footerLink}>Sign up free</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </Animated.View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
