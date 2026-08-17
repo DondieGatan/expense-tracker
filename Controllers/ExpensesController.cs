@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ExpenseTracker.Data;
@@ -5,6 +7,7 @@ using ExpenseTracker.Models;
 
 namespace ExpenseTracker.Controllers;
 
+[Authorize]
 public class ExpensesController : Controller
 {
     private readonly ApplicationDbContext _context;
@@ -14,10 +17,12 @@ public class ExpensesController : Controller
         _context = context;
     }
 
+    private string CurrentUserId => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
     // GET: /Expenses
     public async Task<IActionResult> Index(string? category, string? q, DateTime? from, DateTime? to)
     {
-        var query = ApplyFilters(_context.Expenses.AsQueryable(), category, q, from, to);
+        var query = ApplyFilters(_context.Expenses.Where(e => e.UserId == CurrentUserId), category, q, from, to);
 
         ViewBag.Categories = ExpenseCategories.All;
         ViewBag.SelectedCategory = category;
@@ -45,7 +50,7 @@ public class ExpensesController : Controller
     // GET: /Expenses/Export
     public async Task<IActionResult> Export(string? category, string? q, DateTime? from, DateTime? to)
     {
-        var expenses = await ApplyFilters(_context.Expenses.AsQueryable(), category, q, from, to)
+        var expenses = await ApplyFilters(_context.Expenses.Where(e => e.UserId == CurrentUserId), category, q, from, to)
             .OrderByDescending(e => e.Date).ThenByDescending(e => e.Id)
             .ToListAsync();
 
@@ -93,6 +98,7 @@ public class ExpensesController : Controller
             return View(expense);
         }
 
+        expense.UserId = CurrentUserId;
         _context.Add(expense);
         await _context.SaveChangesAsync();
         TempData["Message"] = "Expense added.";
@@ -103,7 +109,7 @@ public class ExpensesController : Controller
     public async Task<IActionResult> Edit(int? id)
     {
         if (id is null) return NotFound();
-        var expense = await _context.Expenses.FindAsync(id);
+        var expense = await _context.Expenses.FirstOrDefaultAsync(e => e.Id == id && e.UserId == CurrentUserId);
         if (expense is null) return NotFound();
 
         ViewBag.Categories = ExpenseCategories.All;
@@ -118,6 +124,9 @@ public class ExpensesController : Controller
     {
         if (id != expense.Id) return NotFound();
 
+        var existing = await _context.Expenses.FirstOrDefaultAsync(e => e.Id == id && e.UserId == CurrentUserId);
+        if (existing is null) return NotFound();
+
         if (!ModelState.IsValid)
         {
             ViewBag.Categories = ExpenseCategories.All;
@@ -125,7 +134,13 @@ public class ExpensesController : Controller
             return View(expense);
         }
 
-        _context.Update(expense);
+        existing.Description = expense.Description;
+        existing.Amount = expense.Amount;
+        existing.Category = expense.Category;
+        existing.Date = expense.Date;
+        existing.PaymentMethod = expense.PaymentMethod;
+        existing.Notes = expense.Notes;
+
         await _context.SaveChangesAsync();
         TempData["Message"] = "Expense updated.";
         return RedirectToAction(nameof(Index));
@@ -135,7 +150,7 @@ public class ExpensesController : Controller
     public async Task<IActionResult> Delete(int? id)
     {
         if (id is null) return NotFound();
-        var expense = await _context.Expenses.FirstOrDefaultAsync(e => e.Id == id);
+        var expense = await _context.Expenses.FirstOrDefaultAsync(e => e.Id == id && e.UserId == CurrentUserId);
         if (expense is null) return NotFound();
         return View(expense);
     }
@@ -145,7 +160,7 @@ public class ExpensesController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteConfirmed(int id)
     {
-        var expense = await _context.Expenses.FindAsync(id);
+        var expense = await _context.Expenses.FirstOrDefaultAsync(e => e.Id == id && e.UserId == CurrentUserId);
         if (expense is not null)
         {
             _context.Expenses.Remove(expense);
@@ -158,31 +173,53 @@ public class ExpensesController : Controller
     // GET: /Expenses/Dashboard
     public async Task<IActionResult> Dashboard()
     {
-        var all = await _context.Expenses.ToListAsync();
+        var userId = CurrentUserId;
         var startOfMonth = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
-        var budget = await _context.Budgets.FirstOrDefaultAsync();
-
         var trendStart = startOfMonth.AddMonths(-5);
+
+        var thisMonthTotal = await _context.Expenses
+            .Where(e => e.UserId == userId && e.Date >= startOfMonth)
+            .SumAsync(e => (decimal?)e.Amount) ?? 0m;
+        var expenseCount = await _context.Expenses.CountAsync(e => e.UserId == userId);
+
+        var byCategory = await _context.Expenses
+            .Where(e => e.UserId == userId)
+            .GroupBy(e => e.Category)
+            .Select(g => new CategoryTotal { Category = g.Key, Total = g.Sum(e => e.Amount) })
+            .OrderByDescending(c => c.Total)
+            .ToListAsync();
+
+        var recentExpenses = await _context.Expenses
+            .Where(e => e.UserId == userId)
+            .OrderByDescending(e => e.Date).ThenByDescending(e => e.Id)
+            .Take(5)
+            .ToListAsync();
+
+        var trendData = await _context.Expenses
+            .Where(e => e.UserId == userId && e.Date >= trendStart)
+            .GroupBy(e => new { e.Date.Year, e.Date.Month })
+            .Select(g => new { g.Key.Year, g.Key.Month, Total = g.Sum(e => e.Amount) })
+            .ToListAsync();
+
         var monthlyTrend = Enumerable.Range(0, 6)
             .Select(i => trendStart.AddMonths(i))
             .Select(month => new MonthTotal
             {
                 Label = month.ToString("MMM"),
-                Total = all.Where(e => e.Date.Year == month.Year && e.Date.Month == month.Month).Sum(e => e.Amount),
+                Total = trendData.FirstOrDefault(t => t.Year == month.Year && t.Month == month.Month)?.Total ?? 0m,
             })
             .ToList();
 
+        var budget = await _context.Budgets.FirstOrDefaultAsync(b => b.UserId == userId);
+        var totalSpent = await _context.Expenses.Where(e => e.UserId == userId).SumAsync(e => (decimal?)e.Amount) ?? 0m;
+
         var vm = new DashboardViewModel
         {
-            TotalSpent = all.Sum(e => e.Amount),
-            ThisMonthTotal = all.Where(e => e.Date >= startOfMonth).Sum(e => e.Amount),
-            ExpenseCount = all.Count,
-            ByCategory = all
-                .GroupBy(e => e.Category)
-                .Select(g => new CategoryTotal { Category = g.Key, Total = g.Sum(e => e.Amount) })
-                .OrderByDescending(c => c.Total)
-                .ToList(),
-            RecentExpenses = all.OrderByDescending(e => e.Date).ThenByDescending(e => e.Id).Take(5).ToList(),
+            TotalSpent = totalSpent,
+            ThisMonthTotal = thisMonthTotal,
+            ExpenseCount = expenseCount,
+            ByCategory = byCategory,
+            RecentExpenses = recentExpenses,
             MonthlyTrend = monthlyTrend,
             BudgetLimit = budget?.MonthlyLimit,
         };
@@ -193,7 +230,7 @@ public class ExpensesController : Controller
     // GET: /Expenses/Budget
     public async Task<IActionResult> Budget()
     {
-        var budget = await _context.Budgets.FirstOrDefaultAsync();
+        var budget = await _context.Budgets.FirstOrDefaultAsync(b => b.UserId == CurrentUserId);
         return View(budget ?? new Budget());
     }
 
@@ -207,10 +244,10 @@ public class ExpensesController : Controller
             return View(budget);
         }
 
-        var existing = await _context.Budgets.FirstOrDefaultAsync();
+        var existing = await _context.Budgets.FirstOrDefaultAsync(b => b.UserId == CurrentUserId);
         if (existing is null)
         {
-            _context.Budgets.Add(new Budget { MonthlyLimit = budget.MonthlyLimit });
+            _context.Budgets.Add(new Budget { MonthlyLimit = budget.MonthlyLimit, UserId = CurrentUserId });
         }
         else
         {

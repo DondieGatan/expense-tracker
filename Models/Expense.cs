@@ -7,6 +7,8 @@ public class Expense
 {
     public int Id { get; set; }
 
+    public string UserId { get; set; } = string.Empty;
+
     [Required, StringLength(150)]
     public string Description { get; set; } = string.Empty;
 

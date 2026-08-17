@@ -10,14 +10,56 @@
 
 <h1 class="page-title">Dashboard</h1>
 
+<div class="balance-card">
+    <span class="balance-label">This Month</span>
+    <div class="balance-value">@Model.ThisMonthTotal.ToString("C")</div>
+
+    @if (Model.BudgetLimit.HasValue)
+    {
+        var overBudget = Model.BudgetRemaining < 0;
+        <div class="balance-stats">
+            <div class="balance-stat">
+                <span class="balance-stat-icon">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>
+                </span>
+                <span>
+                    <span class="balance-stat-label">Budget</span>
+                    <span class="balance-stat-value">@Model.BudgetLimit.Value.ToString("C")</span>
+                </span>
+            </div>
+            <div class="balance-stat @(overBudget ? "balance-stat-negative" : "")">
+                <span class="balance-stat-icon">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        @if (overBudget)
+                        {
+                            <path d="M12 5v14M19 12l-7 7-7-7"/>
+                        }
+                        else
+                        {
+                            <path d="M12 19V5M5 12l7-7 7 7"/>
+                        }
+                    </svg>
+                </span>
+                <span>
+                    <span class="balance-stat-label">@(overBudget ? "Over budget" : "Remaining")</span>
+                    <span class="balance-stat-value">@Math.Abs(Model.BudgetRemaining).ToString("C")</span>
+                </span>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="balance-empty">
+            <span>No budget set yet</span>
+            <a asp-action="Budget">Set a monthly budget &rarr;</a>
+        </div>
+    }
+</div>
+
 <div class="stat-grid">
     <div class="stat-card">
         <span class="stat-value">@Model.TotalSpent.ToString("C")</span>
-        <span class="stat-label">Total Spent</span>
-    </div>
-    <div class="stat-card">
-        <span class="stat-value">@Model.ThisMonthTotal.ToString("C")</span>
-        <span class="stat-label">This Month</span>
+        <span class="stat-label">Total Spent (All Time)</span>
     </div>
     <div class="stat-card">
         <span class="stat-value">@Model.ExpenseCount</span>
@@ -25,51 +67,27 @@
     </div>
 </div>
 
-<div class="panel">
-    <div class="panel-header">
-        <h2>Monthly Budget</h2>
-        <a asp-action="Budget" class="btn btn-small btn-ghost">@(Model.BudgetLimit.HasValue ? "Edit" : "Set Budget")</a>
-    </div>
-    @if (Model.BudgetLimit.HasValue)
-    {
-        var pct = Math.Min(Model.BudgetPercentUsed, 100);
-        var overBudget = Model.BudgetRemaining < 0;
-        var barClass = Model.BudgetPercentUsed >= 100 ? "danger" : Model.BudgetPercentUsed >= 75 ? "warn" : "ok";
-        <div class="budget-bar">
-            <div class="budget-bar-fill budget-@barClass" style="width:@(pct)%"></div>
-        </div>
-        <div class="budget-meta">
-            <span>@Model.ThisMonthTotal.ToString("C") of @Model.BudgetLimit.Value.ToString("C") (@Model.BudgetPercentUsed%)</span>
-            <span class="@(overBudget ? "budget-over" : "")">
-                @(overBudget ? $"{Math.Abs(Model.BudgetRemaining):C} over budget" : $"{Model.BudgetRemaining:C} remaining")
-            </span>
-        </div>
-    }
-    else
-    {
-        <p class="empty-state-inline">No budget set yet — <a asp-action="Budget">set a monthly limit</a> to track your spending against it.</p>
-    }
-</div>
-
 <div class="grid-2">
     <div class="panel">
-        <h2>Recent Expenses</h2>
+        <div class="panel-header">
+            <h2>Recent Expenses</h2>
+            <a asp-action="Index">See all &rarr;</a>
+        </div>
         @if (Model.RecentExpenses.Any())
         {
-            <table class="data-table">
-                <thead><tr><th>Description</th><th>Category</th><th>Date</th><th>Amount</th></tr></thead>
-                <tbody>
-                    @foreach (var e in Model.RecentExpenses)
-                    {
-                        <tr>
-                            <td>@e.Description</td>
-                            <td><span class="badge">@e.Category</span></td>
-                            <td>@e.Date.ToString("yyyy-MM-dd")</td>
-                            <td>@e.Amount.ToString("C")</td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+            <div class="txn-list">
+                @foreach (var e in Model.RecentExpenses)
+                {
+                    <div class="txn-row">
+                        <span class="txn-icon">@await Html.PartialAsync("_CategoryIcon", e.Category)</span>
+                        <span class="txn-main">
+                            <span class="txn-title">@e.Description</span>
+                            <span class="txn-sub">@e.Category &middot; @e.Date.ToString("MMM d")</span>
+                        </span>
+                        <span class="txn-amount txn-amount-negative">-@e.Amount.ToString("C")</span>
+                    </div>
+                }
+            </div>
         }
         else
         {
@@ -106,6 +124,7 @@
     <script>
         const chartTextColor = getComputedStyle(document.body).getPropertyValue('--text-muted').trim();
         const chartGridColor = getComputedStyle(document.body).getPropertyValue('--border').trim();
+        const chartAccentColor = getComputedStyle(document.body).getPropertyValue('--accent').trim();
         Chart.defaults.color = chartTextColor;
         Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
 
@@ -118,7 +137,7 @@
                     labels: categoryLabels,
                     datasets: [{
                         data: categoryTotals,
-                        backgroundColor: ['#2fb380', '#3d9bf0', '#e8a33d', '#f15b6c', '#a78dd6', '#5bc9c9', '#e88fc0', '#c9c15b', '#8f9bd6', '#d68f5b'],
+                        backgroundColor: ['#74f2a0', '#4dd4e0', '#f0b94d', '#f37272', '#9b8cf2', '#5bc9c9', '#e88fc0', '#c9c15b', '#6ba3f2'],
                         borderWidth: 0,
                     }],
                 },
@@ -137,7 +156,7 @@
                 datasets: [{
                     label: 'Spent',
                     data: trendTotals,
-                    backgroundColor: '#2fb380',
+                    backgroundColor: chartAccentColor,
                     borderRadius: 4,
                     maxBarThickness: 40,
                 }],

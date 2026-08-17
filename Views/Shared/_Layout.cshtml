@@ -1,3 +1,6 @@
+@using Microsoft.AspNetCore.Identity
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9,19 +12,41 @@
 <body>
     @{
         var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+        ApplicationUser? currentUser = SignInManager.IsSignedIn(User) ? await UserManager.GetUserAsync(User) : null;
+        var initials = "?";
+        if (currentUser is not null)
+        {
+            var parts = (currentUser.FullName ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length >= 2) { initials = $"{parts[0][0]}{parts[^1][0]}".ToUpperInvariant(); }
+            else if (parts.Length == 1) { initials = parts[0][0].ToString().ToUpperInvariant(); }
+            else if (!string.IsNullOrEmpty(currentUser.Email)) { initials = currentUser.Email[0].ToString().ToUpperInvariant(); }
+        }
     }
     <nav class="navbar">
         <a class="brand" asp-controller="Expenses" asp-action="Dashboard">
             <span class="brand-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
             </span>
             ExpenseTracker
         </a>
-        <div class="nav-links">
-            <a asp-controller="Expenses" asp-action="Dashboard" class="@(currentAction == "Dashboard" ? "active" : "")">Dashboard</a>
-            <a asp-controller="Expenses" asp-action="Index" class="@(currentAction == "Index" ? "active" : "")">Expenses</a>
-            <a asp-controller="Expenses" asp-action="Create" class="btn btn-primary btn-small">+ Add Expense</a>
-        </div>
+
+        @if (currentUser is not null)
+        {
+            <div class="nav-links nav-links-desktop">
+                <a asp-controller="Expenses" asp-action="Dashboard" class="@(currentAction == "Dashboard" ? "active" : "")">Dashboard</a>
+                <a asp-controller="Expenses" asp-action="Index" class="@(currentAction == "Index" ? "active" : "")">Expenses</a>
+                <a asp-controller="Expenses" asp-action="Budget" class="@(currentAction == "Budget" ? "active" : "")">Budget</a>
+                <a asp-controller="Expenses" asp-action="Create" class="btn btn-primary btn-small">+ Add Expense</a>
+            </div>
+            <div class="nav-user">
+                <span class="avatar" title="@currentUser.FullName">@initials</span>
+                <form asp-controller="Account" asp-action="Logout" method="post" class="logout-form">
+                    <button type="submit" class="icon-link-btn" title="Log out" aria-label="Log out">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    </button>
+                </form>
+            </div>
+        }
     </nav>
 
     <main class="container">
@@ -31,6 +56,32 @@
         }
         @RenderBody()
     </main>
+
+    @if (currentUser is not null)
+    {
+        <nav class="bottom-nav">
+            <a class="bottom-nav-item @(currentAction == "Dashboard" ? "active" : "")" asp-controller="Expenses" asp-action="Dashboard">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                Home
+            </a>
+            <a class="bottom-nav-item @(currentAction == "Index" ? "active" : "")" asp-controller="Expenses" asp-action="Index">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
+                History
+            </a>
+            <a class="bottom-nav-fab" asp-controller="Expenses" asp-action="Create" aria-label="Add expense">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </a>
+            <a class="bottom-nav-item @(currentAction == "Budget" ? "active" : "")" asp-controller="Expenses" asp-action="Budget">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>
+                Budget
+            </a>
+            <button type="button" class="bottom-nav-item" onclick="document.getElementById('mobileLogoutForm').submit()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                Logout
+            </button>
+        </nav>
+        <form id="mobileLogoutForm" asp-controller="Account" asp-action="Logout" method="post" style="display:none;"></form>
+    }
 
     <footer class="footer">ExpenseTracker &copy; 2026 &mdash; Dondie Godwin Gatan</footer>
 

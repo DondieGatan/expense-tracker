@@ -5,7 +5,12 @@
     var paymentMethods = (string[])ViewBag.PaymentMethods;
 }
 
-<h1 class="page-title">Add Expense</h1>
+<div class="header-row">
+    <a asp-action="Index" class="back-link" aria-label="Back">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </a>
+    <h1 class="page-title">Add Expense</h1>
+</div>
 
 <form asp-action="Create" method="post" class="form-panel">
     <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
@@ -25,24 +30,24 @@
         </label>
     </div>
 
-    <div class="field-row">
-        <label>Category
-            <select asp-for="Category">
-                @foreach (var c in categories)
-                {
-                    <option value="@c">@c</option>
-                }
-            </select>
-        </label>
-        <label>Payment Method
-            <select asp-for="PaymentMethod">
-                @foreach (var p in paymentMethods)
-                {
-                    <option value="@p">@p</option>
-                }
-            </select>
-        </label>
-    </div>
+    <label>Category
+        <div class="chip-group" id="categoryChips">
+            @foreach (var c in categories)
+            {
+                <button type="button" class="chip @(Model.Category == c ? "active" : "")" data-value="@c">@c</button>
+            }
+        </div>
+        <input type="hidden" asp-for="Category" />
+    </label>
+
+    <label>Payment Method
+        <select asp-for="PaymentMethod">
+            @foreach (var p in paymentMethods)
+            {
+                <option value="@p">@p</option>
+            }
+        </select>
+    </label>
 
     <label>Notes
         <textarea asp-for="Notes" rows="3" placeholder="Optional"></textarea>
@@ -53,3 +58,15 @@
         <a asp-action="Index" class="btn btn-ghost">Cancel</a>
     </div>
 </form>
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('#categoryChips .chip').forEach(function (chip) {
+            chip.addEventListener('click', function () {
+                document.querySelectorAll('#categoryChips .chip').forEach(c => c.classList.remove('active'));
+                chip.classList.add('active');
+                document.getElementById('Category').value = chip.dataset.value;
+            });
+        });
+    </script>
+}

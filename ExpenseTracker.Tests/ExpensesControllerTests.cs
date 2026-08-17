@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
@@ -9,11 +10,24 @@ namespace ExpenseTracker.Tests;
 
 public class ExpensesControllerTests
 {
-    private static ExpensesController CreateController(ApplicationDbContext db)
-        => new(db) { TempData = new TempDataDictionary(new DefaultHttpContext(), new NoOpTempDataProvider()) };
+    private const string TestUserId = "test-user-id";
+
+    private static ExpensesController CreateController(ApplicationDbContext db, string userId = TestUserId)
+    {
+        var httpContext = new DefaultHttpContext
+        {
+            User = new ClaimsPrincipal(new ClaimsIdentity(
+                new[] { new Claim(ClaimTypes.NameIdentifier, userId) }, "TestAuth")),
+        };
+        return new ExpensesController(db)
+        {
+            TempData = new TempDataDictionary(httpContext, new NoOpTempDataProvider()),
+            ControllerContext = new ControllerContext { HttpContext = httpContext },
+        };
+    }
 
     private static Expense MakeExpense(string description = "Groceries", decimal amount = 100m,
-        string category = "Food", DateTime? date = null, string paymentMethod = "Cash")
+        string category = "Food", DateTime? date = null, string paymentMethod = "Cash", string userId = TestUserId)
         => new()
         {
             Description = description,
@@ -21,6 +35,7 @@ public class ExpensesControllerTests
             Category = category,
             Date = date ?? DateTime.Today,
             PaymentMethod = paymentMethod,
+            UserId = userId,
         };
 
     [Fact]
@@ -164,7 +179,7 @@ public class ExpensesControllerTests
         db.Expenses.AddRange(
             MakeExpense("A", amount: 100m, date: DateTime.Today),
             MakeExpense("B", amount: 50m, date: DateTime.Today.AddMonths(-2)));
-        db.Budgets.Add(new Budget { MonthlyLimit = 200m });
+        db.Budgets.Add(new Budget { MonthlyLimit = 200m, UserId = TestUserId });
         await db.SaveChangesAsync();
         var controller = CreateController(db);
 
@@ -195,7 +210,7 @@ public class ExpensesControllerTests
     public async Task Budget_Post_UpdatesExistingBudget()
     {
         using var db = TestDbFactory.Create();
-        db.Budgets.Add(new Budget { MonthlyLimit = 100m });
+        db.Budgets.Add(new Budget { MonthlyLimit = 100m, UserId = TestUserId });
         await db.SaveChangesAsync();
         var controller = CreateController(db);
 
@@ -203,6 +218,38 @@ public class ExpensesControllerTests
 
         Assert.Single(db.Budgets);
         Assert.Equal(750m, db.Budgets.Single().MonthlyLimit);
+    }
+
+    [Fact]
+    public async Task Index_OnlyReturnsCurrentUsersExpenses()
+    {
+        using var db = TestDbFactory.Create();
+        db.Expenses.AddRange(
+            MakeExpense("Mine", userId: TestUserId),
+            MakeExpense("Someone else's", userId: "other-user-id"));
+        await db.SaveChangesAsync();
+        var controller = CreateController(db, TestUserId);
+
+        var result = await controller.Index(null, null, null, null);
+
+        var view = Assert.IsType<ViewResult>(result);
+        var model = Assert.IsAssignableFrom<IEnumerable<Expense>>(view.Model);
+        Assert.Single(model);
+        Assert.Equal("Mine", model.Single().Description);
+    }
+
+    [Fact]
+    public async Task DeleteConfirmed_DoesNotRemoveAnotherUsersExpense()
+    {
+        using var db = TestDbFactory.Create();
+        var expense = MakeExpense(userId: "other-user-id");
+        db.Expenses.Add(expense);
+        await db.SaveChangesAsync();
+        var controller = CreateController(db, TestUserId);
+
+        await controller.DeleteConfirmed(expense.Id);
+
+        Assert.Single(db.Expenses);
     }
 
     [Fact]

@@ -3,7 +3,12 @@
     ViewData["Title"] = "Set Budget";
 }
 
-<h1 class="page-title">Set Monthly Budget</h1>
+<div class="header-row">
+    <a asp-action="Dashboard" class="back-link" aria-label="Back">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </a>
+    <h1 class="page-title">Set Monthly Budget</h1>
+</div>
 
 <form asp-action="Budget" method="post" class="form-panel">
     <input type="hidden" asp-for="Id">
