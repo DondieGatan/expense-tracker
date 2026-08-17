@@ -1,4 +1,11 @@
-bin/
-obj/
-*.user
+# Python (backend/)
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+backend/.env
+
+# Node / Expo (mobile/)
+# (mobile/ has its own .gitignore for node_modules, .expo, etc.)
+
 *.log
