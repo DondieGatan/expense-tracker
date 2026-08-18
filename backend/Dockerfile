@@ -1,12 +1,16 @@
-FROM python:3.12-slim
+FROM python:3.12-slim-bookworm
 
-# msodbcsql18 requires curl/gnupg to add Microsoft's apt repo, and unixodbc
-# for pyodbc's driver manager. This is why Render's native Python runtime
-# won't work here — it has no apt access — but a Dockerfile does.
+# msodbcsql18 requires unixodbc for pyodbc's driver manager. This is why
+# Render's native Python runtime won't work here — it has no apt access —
+# but a Dockerfile does. Pinned to bookworm (Debian 12): Microsoft only
+# publishes this repo for specific Debian releases, and newer slim images
+# have moved to trixie, which also dropped apt-key (so we use Microsoft's
+# packages-microsoft-prod.deb installer instead of apt-key).
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl gnupg unixodbc \
-    && curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - \
-    && curl https://packages.microsoft.com/config/debian/12/prod.list > /etc/apt/sources.list.d/mssql-release.list \
+    curl unixodbc \
+    && curl -sSL -O https://packages.microsoft.com/config/debian/12/packages-microsoft-prod.deb \
+    && dpkg -i packages-microsoft-prod.deb \
+    && rm packages-microsoft-prod.deb \
     && apt-get update \
     && ACCEPT_EULA=Y apt-get install -y --no-install-recommends msodbcsql18 \
     && apt-get clean \
