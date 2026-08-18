@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { api, setToken } from '../api/client';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
+import { api, setTokens, getRefreshToken, registerSessionExpiredHandler, ApiError } from '../api/client';
 import { User } from '../api/types';
 
 interface AuthContextValue {
@@ -18,9 +18,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const refreshTokenRef = useRef<string | null>(null);
 
   useEffect(() => {
+    registerSessionExpiredHandler(() => {
+      refreshTokenRef.current = null;
+      setUser(null);
+    });
+
     (async () => {
+      refreshTokenRef.current = await getRefreshToken();
       try {
         const data = await api.get('/auth/me');
         setUser(data.user);
@@ -36,7 +43,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setError(null);
     try {
       const data = await api.post('/auth/login', { email, password });
-      await setToken(data.accessToken);
+      await setTokens(data.accessToken, data.refreshToken);
+      refreshTokenRef.current = data.refreshToken;
       setUser(data.user);
     } catch (e: any) {
       setError(e.message || 'Login failed.');
@@ -48,7 +56,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setError(null);
     try {
       const data = await api.post('/auth/register', { fullName, email, password });
-      await setToken(data.accessToken);
+      await setTokens(data.accessToken, data.refreshToken);
+      refreshTokenRef.current = data.refreshToken;
       setUser(data.user);
     } catch (e: any) {
       setError(e.message || 'Registration failed.');
@@ -57,7 +66,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
-    await setToken(null);
+    try {
+      await api.post('/auth/logout', refreshTokenRef.current ? { refreshToken: refreshTokenRef.current } : undefined);
+    } catch (e) {
+      // Best-effort server-side revocation — an unreachable API or an
+      // already-expired token shouldn't block logging out locally.
+      if (!(e instanceof ApiError)) throw e;
+    }
+    refreshTokenRef.current = null;
+    await setTokens(null, null);
     setUser(null);
   }, []);
 

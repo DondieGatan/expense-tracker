@@ -1,14 +1,28 @@
 import re
 
 from flask import request, jsonify
-from flask_jwt_extended import create_access_token, jwt_required
+from flask_jwt_extended import (
+    create_access_token,
+    create_refresh_token,
+    decode_token,
+    get_jwt,
+    get_jwt_identity,
+    jwt_required,
+)
 
 from app.auth import auth_bp
 from app.extensions import db
-from app.models import User
+from app.models import User, TokenBlocklist
 from app.utils import current_user_id
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+
+def _tokens_for(user):
+    return {
+        "accessToken": create_access_token(identity=str(user.id)),
+        "refreshToken": create_refresh_token(identity=str(user.id)),
+    }
 
 
 @auth_bp.route("/register", methods=["POST"])
@@ -32,8 +46,7 @@ def register():
     db.session.add(user)
     db.session.commit()
 
-    token = create_access_token(identity=str(user.id))
-    return jsonify({"accessToken": token, "user": user.to_dict()}), 201
+    return jsonify({**_tokens_for(user), "user": user.to_dict()}), 201
 
 
 @auth_bp.route("/login", methods=["POST"])
@@ -46,8 +59,33 @@ def login():
     if user is None or not user.check_password(password):
         return jsonify({"error": "Invalid email or password."}), 401
 
-    token = create_access_token(identity=str(user.id))
-    return jsonify({"accessToken": token, "user": user.to_dict()}), 200
+    return jsonify({**_tokens_for(user), "user": user.to_dict()}), 200
+
+
+@auth_bp.route("/refresh", methods=["POST"])
+@jwt_required(refresh=True)
+def refresh():
+    identity = get_jwt_identity()
+    return jsonify({"accessToken": create_access_token(identity=identity)}), 200
+
+
+@auth_bp.route("/logout", methods=["POST"])
+@jwt_required()
+def logout():
+    jti = get_jwt()["jti"]
+    db.session.add(TokenBlocklist(jti=jti))
+
+    data = request.get_json(silent=True) or {}
+    refresh_token = data.get("refreshToken")
+    if refresh_token:
+        try:
+            payload = decode_token(refresh_token)
+            db.session.add(TokenBlocklist(jti=payload["jti"]))
+        except Exception:
+            pass
+
+    db.session.commit()
+    return "", 204
 
 
 @auth_bp.route("/me", methods=["GET"])

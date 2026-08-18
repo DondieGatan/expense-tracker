@@ -50,3 +50,58 @@ def test_me_returns_current_user(client, register_user):
     resp = client.get("/api/auth/me", headers=headers)
     assert resp.status_code == 200
     assert resp.get_json()["user"]["email"] == "alex@example.com"
+
+
+def test_register_returns_refresh_token(client):
+    resp = client.post(
+        "/api/auth/register",
+        json={"fullName": "Alex Kim", "email": "alex@example.com", "password": "password123"},
+    )
+    assert resp.get_json()["refreshToken"]
+
+
+def test_refresh_issues_new_access_token(client):
+    data = client.post(
+        "/api/auth/register",
+        json={"fullName": "Alex Kim", "email": "alex@example.com", "password": "password123"},
+    ).get_json()
+
+    resp = client.post(
+        "/api/auth/refresh", headers={"Authorization": f"Bearer {data['refreshToken']}"}
+    )
+    assert resp.status_code == 200
+    new_access_token = resp.get_json()["accessToken"]
+    assert new_access_token
+
+    me_resp = client.get("/api/auth/me", headers={"Authorization": f"Bearer {new_access_token}"})
+    assert me_resp.status_code == 200
+
+
+def test_refresh_rejects_an_access_token(client, register_user):
+    headers, _ = register_user()
+    resp = client.post("/api/auth/refresh", headers=headers)
+    assert resp.status_code in (401, 422)
+
+
+def test_logout_revokes_the_access_token(client, register_user):
+    headers, _ = register_user()
+    logout_resp = client.post("/api/auth/logout", headers=headers)
+    assert logout_resp.status_code == 204
+
+    me_resp = client.get("/api/auth/me", headers=headers)
+    assert me_resp.status_code == 401
+
+
+def test_logout_revokes_the_refresh_token_when_provided(client):
+    data = client.post(
+        "/api/auth/register",
+        json={"fullName": "Alex Kim", "email": "alex@example.com", "password": "password123"},
+    ).get_json()
+    access_headers = {"Authorization": f"Bearer {data['accessToken']}"}
+
+    client.post("/api/auth/logout", headers=access_headers, json={"refreshToken": data["refreshToken"]})
+
+    refresh_resp = client.post(
+        "/api/auth/refresh", headers={"Authorization": f"Bearer {data['refreshToken']}"}
+    )
+    assert refresh_resp.status_code == 401

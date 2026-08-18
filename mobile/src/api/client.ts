@@ -30,23 +30,41 @@ function resolveApiBase(): string {
 
 export const API_BASE = resolveApiBase();
 
-const TOKEN_KEY = 'expense_tracker_token';
+const ACCESS_TOKEN_KEY = 'expense_tracker_access_token';
+const REFRESH_TOKEN_KEY = 'expense_tracker_refresh_token';
 
-async function getToken(): Promise<string | null> {
-  if (Platform.OS === 'web') {
-    return window.localStorage.getItem(TOKEN_KEY);
-  }
-  return SecureStore.getItemAsync(TOKEN_KEY);
+async function storageGet(key: string): Promise<string | null> {
+  if (Platform.OS === 'web') return window.localStorage.getItem(key);
+  return SecureStore.getItemAsync(key);
 }
 
-export async function setToken(token: string | null) {
+async function storageSet(key: string, value: string | null) {
   if (Platform.OS === 'web') {
-    if (token) window.localStorage.setItem(TOKEN_KEY, token);
-    else window.localStorage.removeItem(TOKEN_KEY);
+    if (value) window.localStorage.setItem(key, value);
+    else window.localStorage.removeItem(key);
     return;
   }
-  if (token) await SecureStore.setItemAsync(TOKEN_KEY, token);
-  else await SecureStore.deleteItemAsync(TOKEN_KEY);
+  if (value) await SecureStore.setItemAsync(key, value);
+  else await SecureStore.deleteItemAsync(key);
+}
+
+export async function setTokens(accessToken: string | null, refreshToken: string | null) {
+  await Promise.all([storageSet(ACCESS_TOKEN_KEY, accessToken), storageSet(REFRESH_TOKEN_KEY, refreshToken)]);
+}
+
+export async function getAccessToken() {
+  return storageGet(ACCESS_TOKEN_KEY);
+}
+
+export async function getRefreshToken() {
+  return storageGet(REFRESH_TOKEN_KEY);
+}
+
+// Called when a refresh attempt fails (refresh token invalid/expired/revoked) —
+// AuthContext registers this to drop back to the login screen.
+let onSessionExpired: (() => void) | null = null;
+export function registerSessionExpiredHandler(handler: () => void) {
+  onSessionExpired = handler;
 }
 
 export class ApiError extends Error {
@@ -57,26 +75,70 @@ export class ApiError extends Error {
   }
 }
 
-async function request(path: string, options: RequestInit = {}) {
-  const token = await getToken();
+let refreshPromise: Promise<string | null> | null = null;
+
+async function refreshAccessToken(): Promise<string | null> {
+  if (!refreshPromise) {
+    refreshPromise = (async () => {
+      const refreshToken = await storageGet(REFRESH_TOKEN_KEY);
+      if (!refreshToken) return null;
+
+      try {
+        const res = await fetch(`${API_BASE}/auth/refresh`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${refreshToken}` },
+        });
+        if (!res.ok) return null;
+        const data = await res.json();
+        await storageSet(ACCESS_TOKEN_KEY, data.accessToken);
+        return data.accessToken as string;
+      } catch {
+        return null;
+      }
+    })().finally(() => {
+      refreshPromise = null;
+    });
+  }
+  return refreshPromise;
+}
+
+async function rawRequest(path: string, options: RequestInit, token: string | null) {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string> | undefined),
   };
   if (token) headers.Authorization = `Bearer ${token}`;
+  return fetch(`${API_BASE}${path}`, { ...options, headers });
+}
 
-  const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
-
+async function parseResponse(res: Response) {
   if (res.status === 204) return null;
-
   const isJson = res.headers.get('content-type')?.includes('application/json');
   const body = isJson ? await res.json() : await res.text();
-
   if (!res.ok) {
     const message = isJson && body?.error ? body.error : 'Something went wrong.';
     throw new ApiError(message, res.status);
   }
   return body;
+}
+
+const AUTH_ENDPOINTS = ['/auth/login', '/auth/register', '/auth/refresh'];
+
+async function request(path: string, options: RequestInit = {}) {
+  const token = await getAccessToken();
+  let res = await rawRequest(path, options, token);
+
+  if (res.status === 401 && !AUTH_ENDPOINTS.includes(path)) {
+    const newToken = await refreshAccessToken();
+    if (newToken) {
+      res = await rawRequest(path, options, newToken);
+    } else {
+      await setTokens(null, null);
+      onSessionExpired?.();
+    }
+  }
+
+  return parseResponse(res);
 }
 
 export const api = {

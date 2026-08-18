@@ -39,4 +39,14 @@ def create_app(config_class=Config):
     def expired_token(header, payload):
         return jsonify({"error": "Session expired, please log in again."}), 401
 
+    @jwt.revoked_token_loader
+    def revoked_token(header, payload):
+        return jsonify({"error": "This session has been logged out."}), 401
+
+    @jwt.token_in_blocklist_loader
+    def check_if_token_revoked(header, payload):
+        from app.models import TokenBlocklist
+        jti = payload["jti"]
+        return db.session.query(TokenBlocklist.id).filter_by(jti=jti).first() is not None
+
     return app

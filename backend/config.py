@@ -24,7 +24,10 @@ def _build_db_uri():
 class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY", "expense-tracker-dev-secret")
     JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "expense-tracker-jwt-dev-secret-please-change-in-prod")
-    JWT_ACCESS_TOKEN_EXPIRES = timedelta(days=30)
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=30)
+    JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)
+    JWT_BLOCKLIST_ENABLED = True
+    JWT_BLOCKLIST_TOKEN_CHECKS = ["access", "refresh"]
 
     SQLALCHEMY_DATABASE_URI = _build_db_uri()
     SQLALCHEMY_TRACK_MODIFICATIONS = False
