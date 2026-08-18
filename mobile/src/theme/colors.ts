@@ -1,4 +1,4 @@
-export const colors = {
+export const darkColors = {
   bg: '#0a1712',
   surface: '#12261d',
   surface2: '#1a3324',
@@ -13,6 +13,25 @@ export const colors = {
   warn: '#f0b94d',
 };
 
+export const lightColors = {
+  bg: '#f5f9f7',
+  surface: '#ffffff',
+  surface2: '#eef5f1',
+  border: 'rgba(10,23,18,0.10)',
+  text: '#0e1f17',
+  textMuted: '#5f7a6c',
+  accent: '#1fae67',
+  accentStrong: '#158a51',
+  accentContrast: '#ffffff',
+  danger: '#e05252',
+  dangerSoft: 'rgba(224,82,82,0.12)',
+  warn: '#c9880f',
+};
+
+export type Colors = typeof darkColors;
+
+// Deliberately theme-invariant — the pie chart uses these as fixed hues per
+// category slice, and mixed saturated colors read fine on both backgrounds.
 export const categoryChartColors = [
   '#74f2a0', '#4dd4e0', '#f0b94d', '#f37272', '#9b8cf2',
   '#5bc9c9', '#e88fc0', '#c9c15b', '#6ba3f2',

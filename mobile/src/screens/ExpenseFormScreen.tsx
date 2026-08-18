@@ -1,13 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View, Text, TextInput, StyleSheet,
   ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
-import { colors } from '../theme/colors';
+import * as Haptics from 'expo-haptics';
+import { useTheme } from '../context/ThemeContext';
+import { Colors } from '../theme/colors';
 import { api, ApiError } from '../api/client';
-import { EXPENSE_CATEGORIES, PAYMENT_METHODS } from '../theme/constants';
+import { EXPENSE_CATEGORIES, PAYMENT_METHODS, QUICK_ADD_TEMPLATES } from '../theme/constants';
 import { BackIcon, CategoryIcon } from '../components/icons';
 import AnimatedPressable from '../components/AnimatedPressable';
 import DateField from '../components/DateField';
@@ -19,7 +21,16 @@ function today() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function haptic(type: 'success' | 'error' | 'select') {
+  if (Platform.OS === 'web') return;
+  if (type === 'success') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  else if (type === 'error') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+  else Haptics.selectionAsync();
+}
+
 export default function ExpenseFormScreen({ route, navigation }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const expenseId = route.params?.expenseId;
   const isEdit = expenseId != null;
 
@@ -51,6 +62,14 @@ export default function ExpenseFormScreen({ route, navigation }: Props) {
     })();
   }, [expenseId, isEdit]);
 
+  const applyTemplate = (t: typeof QUICK_ADD_TEMPLATES[number]) => {
+    haptic('select');
+    setDescription(t.description);
+    setAmount(t.amount);
+    setCategory(t.category);
+    setPaymentMethod(t.paymentMethod);
+  };
+
   const onSubmit = async () => {
     setError(null);
     setSubmitting(true);
@@ -61,8 +80,10 @@ export default function ExpenseFormScreen({ route, navigation }: Props) {
       } else {
         await api.post('/expenses', payload);
       }
+      haptic('success');
       navigation.goBack();
     } catch (e) {
+      haptic('error');
       setError(e instanceof ApiError ? e.message : 'Something went wrong.');
     } finally {
       setSubmitting(false);
@@ -88,6 +109,20 @@ export default function ExpenseFormScreen({ route, navigation }: Props) {
         </Animated.View>
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
+
+        {!isEdit ? (
+          <Animated.View entering={FadeInDown.duration(400).delay(20)}>
+            <Text style={styles.label}>Quick add</Text>
+            <View style={styles.chipGroup}>
+              {QUICK_ADD_TEMPLATES.map((t) => (
+                <AnimatedPressable key={t.label} scaleTo={0.92} style={styles.templateChip} onPress={() => applyTemplate(t)}>
+                  <CategoryIcon category={t.category} size={13} color={colors.accent} />
+                  <Text style={styles.templateChipText}>{t.label}</Text>
+                </AnimatedPressable>
+              ))}
+            </View>
+          </Animated.View>
+        ) : null}
 
         <Text style={styles.label}>Description</Text>
         <TextInput
@@ -123,7 +158,7 @@ export default function ExpenseFormScreen({ route, navigation }: Props) {
               key={c}
               scaleTo={0.92}
               style={[styles.chip, category === c && styles.chipActive]}
-              onPress={() => setCategory(c)}
+              onPress={() => { haptic('select'); setCategory(c); }}
             >
               <CategoryIcon category={c} size={13} color={category === c ? colors.accentContrast : colors.textMuted} />
               <Text style={[styles.chipText, category === c && styles.chipTextActive]}>{c}</Text>
@@ -138,7 +173,7 @@ export default function ExpenseFormScreen({ route, navigation }: Props) {
               key={p}
               scaleTo={0.92}
               style={[styles.chip, paymentMethod === p && styles.chipActive]}
-              onPress={() => setPaymentMethod(p)}
+              onPress={() => { haptic('select'); setPaymentMethod(p); }}
             >
               <Text style={[styles.chipText, paymentMethod === p && styles.chipTextActive]}>{p}</Text>
             </AnimatedPressable>
@@ -172,7 +207,7 @@ export default function ExpenseFormScreen({ route, navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.bg },
   loadingContainer: { flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' },
   container: { padding: 20, paddingBottom: 60 },
@@ -199,6 +234,12 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: colors.accent },
   chipText: { color: colors.textMuted, fontSize: 12, fontWeight: '600' },
   chipTextActive: { color: colors.accentContrast },
+  templateChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingVertical: 7, paddingHorizontal: 14, borderRadius: 999,
+    backgroundColor: colors.surface2, borderWidth: 1, borderColor: colors.border,
+  },
+  templateChipText: { color: colors.text, fontSize: 12, fontWeight: '600' },
   button: {
     backgroundColor: colors.accent, borderRadius: 999, paddingVertical: 14,
     alignItems: 'center', marginTop: 26,

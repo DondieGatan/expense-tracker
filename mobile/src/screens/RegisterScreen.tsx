@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import Animated, { FadeInUp, FadeIn } from 'react-native-reanimated';
-import { colors } from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
+import { Colors } from '../theme/colors';
 import { useAuth } from '../context/AuthContext';
 import { MailIcon, LockIcon, EyeIcon, UserIcon, LogoMarkIcon } from '../components/icons';
 import AnimatedPressable from '../components/AnimatedPressable';
@@ -14,6 +15,8 @@ import type { AuthStackParamList } from '../navigation/types';
 type Props = NativeStackScreenProps<AuthStackParamList, 'Register'>;
 
 export default function RegisterScreen({ navigation }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { register, error, retryStatus, clearError } = useAuth();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -111,7 +114,7 @@ export default function RegisterScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.bg },
   container: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   card: {

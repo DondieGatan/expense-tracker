@@ -1,29 +1,36 @@
-import React, { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl, useWindowDimensions, ActivityIndicator } from 'react-native';
+import React, { useCallback, useMemo, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, useWindowDimensions } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { PieChart, BarChart } from 'react-native-chart-kit';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown, FadeInUp, FadeInRight } from 'react-native-reanimated';
-import { colors, categoryChartColors } from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
+import { Colors } from '../theme/colors';
+import { categoryChartColors } from '../theme/colors';
 import { api } from '../api/client';
 import { formatCurrency } from '../utils/format';
 import { useCountUp } from '../utils/useCountUp';
 import TxnRow from '../components/TxnRow';
+import Skeleton from '../components/Skeleton';
 import PulseGlow from '../components/PulseGlow';
 import AnimatedPressable from '../components/AnimatedPressable';
-import { ArrowUpIcon, ArrowDownIcon, BudgetIcon } from '../components/icons';
+import {
+  ArrowUpIcon, ArrowDownIcon, BudgetIcon, SunIcon, MoonIcon, EmptyBoxIcon, PlusIcon,
+} from '../components/icons';
 import type { DashboardData } from '../api/types';
 
-const chartConfig = {
-  backgroundGradientFrom: colors.surface,
-  backgroundGradientTo: colors.surface,
-  color: (opacity = 1) => `rgba(116, 242, 160, ${opacity})`,
-  labelColor: () => colors.textMuted,
-  decimalPlaces: 0,
-  barPercentage: 0.6,
-};
-
 export default function DashboardScreen() {
+  const { colors, isDark, toggleTheme } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const chartConfig = useMemo(() => ({
+    backgroundGradientFrom: colors.surface,
+    backgroundGradientTo: colors.surface,
+    color: (opacity = 1) => hexToRgba(colors.accent, opacity),
+    labelColor: () => colors.textMuted,
+    decimalPlaces: 0,
+    barPercentage: 0.6,
+  }), [colors]);
+
   const navigation = useNavigation<any>();
   const { width: windowWidth } = useWindowDimensions();
   const chartWidth = Math.max(windowWidth - 64, 240);
@@ -54,11 +61,27 @@ export default function DashboardScreen() {
 
   const animatedThisMonth = useCountUp(data?.thisMonthTotal ?? 0);
 
+  const header = (
+    <View style={styles.headerRow}>
+      <Animated.Text entering={FadeInDown.duration(400)} style={styles.pageTitle}>Dashboard</Animated.Text>
+      <AnimatedPressable style={styles.themeToggle} onPress={toggleTheme}>
+        {isDark ? <SunIcon size={17} color={colors.text} /> : <MoonIcon size={17} color={colors.text} />}
+      </AnimatedPressable>
+    </View>
+  );
+
   if (loading || !data) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator color={colors.accent} size="large" />
-      </View>
+      <ScrollView style={styles.flex} contentContainerStyle={styles.container}>
+        {header}
+        <Skeleton height={190} borderRadius={22} style={{ marginBottom: 16 }} />
+        <View style={styles.statGrid}>
+          <Skeleton height={70} borderRadius={16} style={{ flex: 1 }} />
+          <Skeleton height={70} borderRadius={16} style={{ flex: 1 }} />
+        </View>
+        <Skeleton height={160} borderRadius={18} style={{ marginBottom: 16 }} />
+        <Skeleton height={220} borderRadius={18} />
+      </ScrollView>
     );
   }
 
@@ -84,7 +107,7 @@ export default function DashboardScreen() {
       contentContainerStyle={styles.container}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
     >
-      <Animated.Text entering={FadeInDown.duration(400)} style={styles.pageTitle}>Dashboard</Animated.Text>
+      {header}
 
       <Animated.View entering={FadeInDown.duration(500).delay(60)} style={styles.balanceCardWrap}>
         <PulseGlow color={colors.accent} size={140} style={styles.balanceGlow} />
@@ -150,7 +173,20 @@ export default function DashboardScreen() {
             </Animated.View>
           ))
         ) : (
-          <Text style={styles.emptyText}>No expenses logged yet.</Text>
+          <View style={styles.emptyState}>
+            <View style={styles.emptyIcon}>
+              <EmptyBoxIcon size={24} color={colors.textMuted} />
+            </View>
+            <Text style={styles.emptyTitle}>No expenses yet</Text>
+            <Text style={styles.emptyText}>Add your first expense to see it here.</Text>
+            <AnimatedPressable
+              style={styles.emptyButton}
+              onPress={() => navigation.getParent()?.navigate('ExpenseForm')}
+            >
+              <PlusIcon size={14} color={colors.accentContrast} />
+              <Text style={styles.emptyButtonText}>Add expense</Text>
+            </AnimatedPressable>
+          </View>
         )}
       </Animated.View>
 
@@ -190,11 +226,23 @@ export default function DashboardScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function hexToRgba(hex: string, opacity: number) {
+  const clean = hex.replace('#', '');
+  const r = parseInt(clean.substring(0, 2), 16);
+  const g = parseInt(clean.substring(2, 4), 16);
+  const b = parseInt(clean.substring(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+}
+
+const makeStyles = (colors: Colors) => StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.bg },
-  loadingContainer: { flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' },
   container: { padding: 20, paddingBottom: 100 },
-  pageTitle: { color: colors.text, fontSize: 22, fontWeight: '700', marginBottom: 16 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
+  pageTitle: { color: colors.text, fontSize: 22, fontWeight: '700' },
+  themeToggle: {
+    width: 38, height: 38, borderRadius: 12, backgroundColor: colors.surface,
+    borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center',
+  },
   balanceCardWrap: { marginBottom: 16 },
   balanceGlow: { top: -30, right: -20 },
   balanceCard: { borderRadius: 22, padding: 22, overflow: 'hidden' },
@@ -228,4 +276,15 @@ const styles = StyleSheet.create({
   panelTitle: { color: colors.text, fontSize: 15, fontWeight: '700', marginBottom: 4 },
   panelLink: { color: colors.accent, fontSize: 12, fontWeight: '700' },
   emptyText: { color: colors.textMuted, fontSize: 13, paddingVertical: 12, textAlign: 'center' },
+  emptyState: { alignItems: 'center', paddingVertical: 20 },
+  emptyIcon: {
+    width: 52, height: 52, borderRadius: 16, backgroundColor: colors.surface2,
+    alignItems: 'center', justifyContent: 'center', marginBottom: 12,
+  },
+  emptyTitle: { color: colors.text, fontSize: 14, fontWeight: '700', marginBottom: 4 },
+  emptyButton: {
+    flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12,
+    backgroundColor: colors.accent, borderRadius: 999, paddingVertical: 9, paddingHorizontal: 16,
+  },
+  emptyButtonText: { color: colors.accentContrast, fontWeight: '700', fontSize: 13 },
 });

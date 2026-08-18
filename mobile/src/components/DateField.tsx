@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Platform, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { colors } from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
+import { Colors } from '../theme/colors';
 import { formatDate } from '../utils/format';
 
 interface Props {
@@ -22,6 +23,8 @@ function toIsoString(d: Date): string {
 }
 
 export default function DateField({ value, onChange }: Props) {
+  const { colors, isDark } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [showPicker, setShowPicker] = useState(false);
 
   if (Platform.OS === 'web') {
@@ -38,7 +41,7 @@ export default function DateField({ value, onChange }: Props) {
         fontSize: 14,
         fontFamily: 'inherit',
         width: '100%',
-        colorScheme: 'dark',
+        colorScheme: isDark ? 'dark' : 'light',
       },
     });
   }
@@ -64,7 +67,7 @@ export default function DateField({ value, onChange }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   input: {
     backgroundColor: colors.surface, borderRadius: 12, borderWidth: 1, borderColor: colors.border,
     paddingHorizontal: 14, paddingVertical: 12,

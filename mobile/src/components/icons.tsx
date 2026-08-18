@@ -155,6 +155,50 @@ export function ArrowDownIcon({ size, color }: IconProps) {
   );
 }
 
+export function DownloadIcon({ size, color }: IconProps) {
+  return (
+    <Svg {...base(size, color)}>
+      <Path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <Polyline points="7 10 12 15 17 10" />
+      <Line x1={12} y1={15} x2={12} y2={3} />
+    </Svg>
+  );
+}
+
+export function SunIcon({ size, color }: IconProps) {
+  return (
+    <Svg {...base(size, color)}>
+      <Circle cx={12} cy={12} r={4} />
+      <Line x1={12} y1={2} x2={12} y2={4} />
+      <Line x1={12} y1={20} x2={12} y2={22} />
+      <Line x1={4.22} y1={4.22} x2={5.64} y2={5.64} />
+      <Line x1={18.36} y1={18.36} x2={19.78} y2={19.78} />
+      <Line x1={2} y1={12} x2={4} y2={12} />
+      <Line x1={20} y1={12} x2={22} y2={12} />
+      <Line x1={4.22} y1={19.78} x2={5.64} y2={18.36} />
+      <Line x1={18.36} y1={5.64} x2={19.78} y2={4.22} />
+    </Svg>
+  );
+}
+
+export function MoonIcon({ size, color }: IconProps) {
+  return (
+    <Svg {...base(size, color)}>
+      <Path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z" />
+    </Svg>
+  );
+}
+
+export function EmptyBoxIcon({ size, color }: IconProps) {
+  return (
+    <Svg {...base(size, color)}>
+      <Path d="M21 8v13H3V8" />
+      <Path d="M1 3h22v5H1z" />
+      <Line x1={10} y1={12} x2={14} y2={12} />
+    </Svg>
+  );
+}
+
 const CATEGORY_PATHS: Record<string, React.ReactNode> = {
   Food: (
     <>

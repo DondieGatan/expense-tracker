@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { createBottomTabNavigator, BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors } from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
+import { Colors } from '../theme/colors';
 import { useAuth } from '../context/AuthContext';
 import DashboardScreen from '../screens/DashboardScreen';
 import ExpensesScreen from '../screens/ExpensesScreen';
@@ -27,6 +28,8 @@ const TAB_LABELS: Record<string, string> = {
 };
 
 function CustomTabBar({ state, navigation }: BottomTabBarProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { logout } = useAuth();
   const parent = navigation.getParent();
 
@@ -82,7 +85,7 @@ export default function AppTabs() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   bar: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around',
     backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.border,

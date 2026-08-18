@@ -1,25 +1,26 @@
 import React from 'react';
 import { View, ActivityIndicator, Text } from 'react-native';
-import { NavigationContainer, DarkTheme } from '@react-navigation/native';
-import { colors } from '../theme/colors';
+import { NavigationContainer, DarkTheme, DefaultTheme } from '@react-navigation/native';
+import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import AuthStack from './AuthStack';
 import AppStack from './AppStack';
 
-const navTheme = {
-  ...DarkTheme,
-  colors: {
-    ...DarkTheme.colors,
-    background: colors.bg,
-    card: colors.surface,
-    text: colors.text,
-    border: colors.border,
-    primary: colors.accent,
-  },
-};
-
 export default function RootNavigator() {
+  const { colors, isDark } = useTheme();
   const { user, loading, retryStatus } = useAuth();
+
+  const navTheme = {
+    ...(isDark ? DarkTheme : DefaultTheme),
+    colors: {
+      ...(isDark ? DarkTheme.colors : DefaultTheme.colors),
+      background: colors.bg,
+      card: colors.surface,
+      text: colors.text,
+      border: colors.border,
+      primary: colors.accent,
+    },
+  };
 
   if (loading) {
     return (

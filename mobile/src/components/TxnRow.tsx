@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { colors } from '../theme/colors';
+import { useTheme } from '../context/ThemeContext';
+import { Colors } from '../theme/colors';
 import { CategoryIcon } from './icons';
 import { formatCurrency, formatDate } from '../utils/format';
 import type { Expense } from '../api/types';
@@ -12,6 +13,8 @@ interface Props {
 }
 
 export default function TxnRow({ expense, onPress, subtitleExtra }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const subtitle = `${expense.category} · ${formatDate(expense.date)}${subtitleExtra ? ` · ${subtitleExtra}` : ''}`;
 
   const content = (
@@ -31,7 +34,7 @@ export default function TxnRow({ expense, onPress, subtitleExtra }: Props) {
   return <TouchableOpacity onPress={onPress}>{content}</TouchableOpacity>;
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, gap: 12 },
   icon: {
     width: 40, height: 40, borderRadius: 12, backgroundColor: colors.surface2,

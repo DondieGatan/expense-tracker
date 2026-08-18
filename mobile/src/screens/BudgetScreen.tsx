@@ -1,14 +1,20 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, TextInput, StyleSheet, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import Animated, { FadeInDown, FadeIn, Layout } from 'react-native-reanimated';
-import { colors } from '../theme/colors';
+import * as Haptics from 'expo-haptics';
+import { Platform } from 'react-native';
+import { useTheme } from '../context/ThemeContext';
+import { Colors } from '../theme/colors';
 import { api, ApiError } from '../api/client';
 import { formatCurrency } from '../utils/format';
 import { BudgetIcon } from '../components/icons';
 import AnimatedPressable from '../components/AnimatedPressable';
+import Skeleton from '../components/Skeleton';
 
 export default function BudgetScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [monthlyLimit, setMonthlyLimit] = useState('');
   const [thisMonthSpent, setThisMonthSpent] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -44,6 +50,7 @@ export default function BudgetScreen() {
     try {
       await api.put('/budget', { monthlyLimit: Number(monthlyLimit) });
       setSaved(true);
+      if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'Something went wrong.');
     } finally {
@@ -53,8 +60,15 @@ export default function BudgetScreen() {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator color={colors.accent} size="large" />
+      <View style={styles.flex}>
+        <View style={styles.header}>
+          <Skeleton width={44} height={44} borderRadius={14} />
+          <View style={{ gap: 6 }}>
+            <Skeleton width={140} height={16} />
+            <Skeleton width={180} height={11} />
+          </View>
+        </View>
+        <Skeleton height={180} borderRadius={18} />
       </View>
     );
   }
@@ -127,7 +141,7 @@ export default function BudgetScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.bg, padding: 20 },
   loadingContainer: { flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' },
   header: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 20 },
