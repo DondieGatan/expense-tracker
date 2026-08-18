@@ -14,7 +14,7 @@ import type { AuthStackParamList } from '../navigation/types';
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
 export default function LoginScreen({ navigation }: Props) {
-  const { login, error, clearError } = useAuth();
+  const { login, error, retryStatus, clearError } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -45,6 +45,7 @@ export default function LoginScreen({ navigation }: Props) {
           </Animated.View>
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
+          {retryStatus ? <Text style={styles.retryStatus}>{retryStatus}</Text> : null}
 
           <View style={styles.field}>
             <View style={styles.fieldIcon}><MailIcon size={16} color={colors.textMuted} /></View>
@@ -114,6 +115,7 @@ const styles = StyleSheet.create({
   title: { color: colors.text, fontSize: 20, fontWeight: '700' },
   subtitle: { color: colors.textMuted, fontSize: 13 },
   error: { color: colors.danger, fontSize: 13, marginBottom: 10, textAlign: 'center' },
+  retryStatus: { color: colors.textMuted, fontSize: 13, marginBottom: 10, textAlign: 'center' },
   field: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: colors.bg,
     borderRadius: 14, borderWidth: 1, borderColor: colors.border,

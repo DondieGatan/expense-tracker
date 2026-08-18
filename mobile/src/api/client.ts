@@ -67,6 +67,15 @@ export function registerSessionExpiredHandler(handler: () => void) {
   onSessionExpired = handler;
 }
 
+// Called while retrying a request that looks like it hit a sleeping free-tier
+// backend (Render spins down after 15 min idle and takes ~30-50s to wake up).
+// AuthContext exposes this as `retryStatus` so screens can show a friendly
+// message instead of a bare "Something went wrong."
+let onRetryStatus: ((message: string | null) => void) | null = null;
+export function registerRetryStatusHandler(handler: (message: string | null) => void) {
+  onRetryStatus = handler;
+}
+
 export class ApiError extends Error {
   status: number;
   constructor(message: string, status: number) {
@@ -111,6 +120,31 @@ async function rawRequest(path: string, options: RequestInit, token: string | nu
   return fetch(`${API_BASE}${path}`, { ...options, headers });
 }
 
+// Retry delays add up to ~41s, covering Render's typical cold-start window.
+const COLD_START_RETRY_DELAYS_MS = [3000, 6000, 12000, 20000];
+
+async function fetchWithColdStartRetry(path: string, options: RequestInit, token: string | null) {
+  for (let attempt = 0; ; attempt++) {
+    const isLastAttempt = attempt === COLD_START_RETRY_DELAYS_MS.length;
+    try {
+      const res = await rawRequest(path, options, token);
+      const contentType = res.headers.get('content-type') || '';
+      const looksLikeSleepingBackend = !res.ok && !contentType.includes('application/json');
+      if (!looksLikeSleepingBackend || isLastAttempt) {
+        onRetryStatus?.(null);
+        return res;
+      }
+    } catch (e) {
+      if (isLastAttempt) {
+        onRetryStatus?.(null);
+        throw e;
+      }
+    }
+    onRetryStatus?.('Waking up the server — this can take up to a minute on first use.');
+    await new Promise((resolve) => setTimeout(resolve, COLD_START_RETRY_DELAYS_MS[attempt]));
+  }
+}
+
 async function parseResponse(res: Response) {
   if (res.status === 204) return null;
   const isJson = res.headers.get('content-type')?.includes('application/json');
@@ -126,7 +160,7 @@ const AUTH_ENDPOINTS = ['/auth/login', '/auth/register', '/auth/refresh'];
 
 async function request(path: string, options: RequestInit = {}) {
   const token = await getAccessToken();
-  let res = await rawRequest(path, options, token);
+  let res = await fetchWithColdStartRetry(path, options, token);
 
   if (res.status === 401 && !AUTH_ENDPOINTS.includes(path)) {
     const newToken = await refreshAccessToken();

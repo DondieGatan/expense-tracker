@@ -1,11 +1,14 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
-import { api, setTokens, getRefreshToken, registerSessionExpiredHandler, ApiError } from '../api/client';
+import {
+  api, setTokens, getRefreshToken, registerSessionExpiredHandler, registerRetryStatusHandler, ApiError,
+} from '../api/client';
 import { User } from '../api/types';
 
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
   error: string | null;
+  retryStatus: string | null;
   login: (email: string, password: string) => Promise<void>;
   register: (fullName: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -18,6 +21,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retryStatus, setRetryStatus] = useState<string | null>(null);
   const refreshTokenRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -25,6 +29,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       refreshTokenRef.current = null;
       setUser(null);
     });
+    registerRetryStatusHandler(setRetryStatus);
 
     (async () => {
       refreshTokenRef.current = await getRefreshToken();
@@ -81,7 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const clearError = useCallback(() => setError(null), []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, error, login, register, logout, clearError }}>
+    <AuthContext.Provider value={{ user, loading, error, retryStatus, login, register, logout, clearError }}>
       {children}
     </AuthContext.Provider>
   );
