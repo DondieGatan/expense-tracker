@@ -1,13 +1,16 @@
 import React, { useCallback, useState } from 'react';
 import { View, Text, TextInput, StyleSheet, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeInDown, FadeIn, Layout } from 'react-native-reanimated';
 import { colors } from '../theme/colors';
 import { api, ApiError } from '../api/client';
+import { formatCurrency } from '../utils/format';
+import { BudgetIcon } from '../components/icons';
 import AnimatedPressable from '../components/AnimatedPressable';
 
 export default function BudgetScreen() {
   const [monthlyLimit, setMonthlyLimit] = useState('');
+  const [thisMonthSpent, setThisMonthSpent] = useState(0);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -19,8 +22,13 @@ export default function BudgetScreen() {
       (async () => {
         setLoading(true);
         try {
-          const data = await api.get('/budget');
-          if (active && data.budget) setMonthlyLimit(String(data.budget.monthlyLimit));
+          const [budgetData, dashboardData] = await Promise.all([
+            api.get('/budget'),
+            api.get('/dashboard'),
+          ]);
+          if (!active) return;
+          if (budgetData.budget) setMonthlyLimit(String(budgetData.budget.monthlyLimit));
+          setThisMonthSpent(dashboardData.thisMonthTotal ?? 0);
         } finally {
           if (active) setLoading(false);
         }
@@ -51,45 +59,108 @@ export default function BudgetScreen() {
     );
   }
 
+  const limitValue = Number(monthlyLimit) || 0;
+  const hasLimit = limitValue > 0;
+  const percentUsed = hasLimit ? Math.min(100, (thisMonthSpent / limitValue) * 100) : 0;
+  const overBudget = hasLimit && thisMonthSpent > limitValue;
+
   return (
-    <Animated.View entering={FadeInDown.duration(450)} style={styles.container}>
-      <Text style={styles.pageTitle}>Set Monthly Budget</Text>
+    <View style={styles.flex}>
+      <Animated.View entering={FadeInDown.duration(400)} style={styles.header}>
+        <View style={styles.headerIcon}>
+          <BudgetIcon size={20} color={colors.accent} />
+        </View>
+        <View>
+          <Text style={styles.pageTitle}>Monthly Budget</Text>
+          <Text style={styles.pageSubtitle}>Set a spending limit and track it live</Text>
+        </View>
+      </Animated.View>
 
-      {saved ? <Text style={styles.success}>Budget updated.</Text> : null}
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      <Animated.View entering={FadeInDown.duration(450).delay(80)} style={styles.card}>
+        {saved ? <Text style={styles.success}>Budget updated.</Text> : null}
+        {error ? <Text style={styles.error}>{error}</Text> : null}
 
-      <Text style={styles.label}>Monthly Limit</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="e.g. 15000"
-        placeholderTextColor={colors.textMuted}
-        keyboardType="decimal-pad"
-        value={monthlyLimit}
-        onChangeText={(v) => { setMonthlyLimit(v); setSaved(false); }}
-      />
+        <Text style={styles.label}>Monthly Limit</Text>
+        <View style={styles.inputRow}>
+          <Text style={styles.inputPrefix}>AED</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="e.g. 15000"
+            placeholderTextColor={colors.textMuted}
+            keyboardType="decimal-pad"
+            value={monthlyLimit}
+            onChangeText={(v) => { setMonthlyLimit(v); setSaved(false); }}
+          />
+        </View>
 
-      <AnimatedPressable
-        style={[styles.button, submitting && styles.buttonDisabled]}
-        onPress={onSubmit}
-        disabled={submitting || !monthlyLimit}
-      >
-        {submitting ? <ActivityIndicator color={colors.accentContrast} /> : <Text style={styles.buttonText}>Save Budget</Text>}
-      </AnimatedPressable>
-    </Animated.View>
+        {hasLimit ? (
+          <Animated.View entering={FadeIn.duration(300)} layout={Layout.springify()} style={styles.progressBlock}>
+            <View style={styles.progressTrack}>
+              <View
+                style={[
+                  styles.progressFill,
+                  { width: `${percentUsed}%` },
+                  overBudget && styles.progressFillOver,
+                ]}
+              />
+            </View>
+            <View style={styles.progressLabels}>
+              <Text style={[styles.progressText, overBudget && styles.progressTextOver]}>
+                {formatCurrency(thisMonthSpent)} spent this month
+              </Text>
+              <Text style={[styles.progressPercent, overBudget && styles.progressTextOver]}>
+                {Math.round((thisMonthSpent / limitValue) * 100)}%
+              </Text>
+            </View>
+          </Animated.View>
+        ) : null}
+
+        <AnimatedPressable
+          style={[styles.button, submitting && styles.buttonDisabled]}
+          onPress={onSubmit}
+          disabled={submitting || !monthlyLimit}
+        >
+          {submitting ? <ActivityIndicator color={colors.accentContrast} /> : <Text style={styles.buttonText}>Save Budget</Text>}
+        </AnimatedPressable>
+      </Animated.View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  flex: { flex: 1, backgroundColor: colors.bg, padding: 20 },
   loadingContainer: { flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' },
-  container: { flex: 1, backgroundColor: colors.bg, padding: 20 },
-  pageTitle: { color: colors.text, fontSize: 20, fontWeight: '700', marginBottom: 16 },
+  header: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 20 },
+  headerIcon: {
+    width: 44, height: 44, borderRadius: 14, backgroundColor: colors.surface2,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  pageTitle: { color: colors.text, fontSize: 20, fontWeight: '700' },
+  pageSubtitle: { color: colors.textMuted, fontSize: 12, marginTop: 2 },
+  card: {
+    backgroundColor: colors.surface, borderRadius: 18, padding: 18,
+    borderWidth: 1, borderColor: colors.border,
+  },
   success: { color: colors.accent, fontSize: 13, marginBottom: 10 },
   error: { color: colors.danger, fontSize: 13, marginBottom: 10 },
   label: { color: colors.textMuted, fontSize: 12, marginBottom: 6 },
-  input: {
-    backgroundColor: colors.surface, borderRadius: 12, borderWidth: 1, borderColor: colors.border,
-    color: colors.text, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14,
+  inputRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    backgroundColor: colors.bg, borderRadius: 12, borderWidth: 1, borderColor: colors.border,
+    paddingHorizontal: 14,
   },
+  inputPrefix: { color: colors.textMuted, fontSize: 14, fontWeight: '700' },
+  input: { flex: 1, color: colors.text, paddingVertical: 12, fontSize: 14 },
+  progressBlock: { marginTop: 18 },
+  progressTrack: {
+    height: 10, borderRadius: 999, backgroundColor: colors.surface2, overflow: 'hidden',
+  },
+  progressFill: { height: '100%', borderRadius: 999, backgroundColor: colors.accent },
+  progressFillOver: { backgroundColor: colors.danger },
+  progressLabels: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 },
+  progressText: { color: colors.textMuted, fontSize: 12 },
+  progressPercent: { color: colors.text, fontSize: 12, fontWeight: '700' },
+  progressTextOver: { color: colors.danger },
   button: { backgroundColor: colors.accent, borderRadius: 999, paddingVertical: 14, alignItems: 'center', marginTop: 20 },
   buttonDisabled: { opacity: 0.7 },
   buttonText: { color: colors.accentContrast, fontWeight: '700', fontSize: 15 },

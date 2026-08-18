@@ -8,7 +8,7 @@ import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { colors } from '../theme/colors';
 import { api, ApiError } from '../api/client';
 import { EXPENSE_CATEGORIES, PAYMENT_METHODS } from '../theme/constants';
-import { BackIcon } from '../components/icons';
+import { BackIcon, CategoryIcon } from '../components/icons';
 import AnimatedPressable from '../components/AnimatedPressable';
 import DateField from '../components/DateField';
 import type { AppStackParamList } from '../navigation/types';
@@ -125,6 +125,7 @@ export default function ExpenseFormScreen({ route, navigation }: Props) {
               style={[styles.chip, category === c && styles.chipActive]}
               onPress={() => setCategory(c)}
             >
+              <CategoryIcon category={c} size={13} color={category === c ? colors.accentContrast : colors.textMuted} />
               <Text style={[styles.chipText, category === c && styles.chipTextActive]}>{c}</Text>
             </AnimatedPressable>
           ))}
@@ -191,7 +192,10 @@ const styles = StyleSheet.create({
   fieldRow: { flexDirection: 'row', gap: 12 },
   fieldHalf: { flex: 1 },
   chipGroup: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { paddingVertical: 7, paddingHorizontal: 14, borderRadius: 999, backgroundColor: colors.surface2 },
+  chip: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingVertical: 7, paddingHorizontal: 14, borderRadius: 999, backgroundColor: colors.surface2,
+  },
   chipActive: { backgroundColor: colors.accent },
   chipText: { color: colors.textMuted, fontSize: 12, fontWeight: '600' },
   chipTextActive: { color: colors.accentContrast },

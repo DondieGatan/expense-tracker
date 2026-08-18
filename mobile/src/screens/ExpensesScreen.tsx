@@ -10,7 +10,7 @@ import { api } from '../api/client';
 import { EXPENSE_CATEGORIES } from '../theme/constants';
 import TxnRow from '../components/TxnRow';
 import AnimatedPressable from '../components/AnimatedPressable';
-import { SearchIcon, TrashIcon } from '../components/icons';
+import { SearchIcon, TrashIcon, CategoryIcon } from '../components/icons';
 import type { Expense } from '../api/types';
 
 export default function ExpensesScreen() {
@@ -88,6 +88,9 @@ export default function ExpensesScreen() {
                 style={[styles.filterChip, active && styles.filterChipActive]}
                 onPress={() => setCategory(value)}
               >
+                {value ? (
+                  <CategoryIcon category={value} size={13} color={active ? colors.accentContrast : colors.textMuted} />
+                ) : null}
                 <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{item}</Text>
               </AnimatedPressable>
             </Animated.View>
@@ -140,6 +143,7 @@ const styles = StyleSheet.create({
   filters: { marginTop: 12, flexGrow: 0 },
   filtersContent: { paddingHorizontal: 20, gap: 8 },
   filterChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingVertical: 6, paddingHorizontal: 14, borderRadius: 999,
     backgroundColor: colors.surface2, marginRight: 8,
   },
