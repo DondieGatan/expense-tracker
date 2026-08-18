@@ -27,6 +27,24 @@ def create_app(config_class=Config):
     def health():
         return jsonify({"status": "ok"}), 200
 
+    @app.route("/api/_diag_tcp")
+    def diag_tcp():
+        import socket
+        import time
+        import os
+
+        host = os.environ.get("SQL_SERVER", "")
+        result = {"host": host}
+        start = time.monotonic()
+        try:
+            sock = socket.create_connection((host, 1433), timeout=10)
+            sock.close()
+            result["tcp_connect"] = "ok"
+        except Exception as e:
+            result["tcp_connect"] = f"failed: {type(e).__name__}: {e}"
+        result["elapsed_seconds"] = round(time.monotonic() - start, 2)
+        return jsonify(result), 200
+
     @jwt.unauthorized_loader
     def unauthorized(reason):
         return jsonify({"error": "Authentication required."}), 401
