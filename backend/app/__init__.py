@@ -45,6 +45,22 @@ def create_app(config_class=Config):
         result["elapsed_seconds"] = round(time.monotonic() - start, 2)
         return jsonify(result), 200
 
+    @app.route("/api/_diag_db")
+    def diag_db():
+        import time
+        import datetime
+        from sqlalchemy import text
+
+        result = {"container_utc_time": datetime.datetime.utcnow().isoformat()}
+        start = time.monotonic()
+        try:
+            db.session.execute(text("SELECT 1"))
+            result["db_connect"] = "ok"
+        except Exception as e:
+            result["db_connect"] = f"failed: {type(e).__name__}: {e}"
+        result["elapsed_seconds"] = round(time.monotonic() - start, 2)
+        return jsonify(result), 200
+
     @jwt.unauthorized_loader
     def unauthorized(reason):
         return jsonify({"error": "Authentication required."}), 401
