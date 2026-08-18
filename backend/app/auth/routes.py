@@ -11,7 +11,7 @@ from flask_jwt_extended import (
 )
 
 from app.auth import auth_bp
-from app.extensions import db
+from app.extensions import db, limiter
 from app.models import User, TokenBlocklist
 from app.utils import current_user_id
 
@@ -26,6 +26,7 @@ def _tokens_for(user):
 
 
 @auth_bp.route("/register", methods=["POST"])
+@limiter.limit("5 per minute")
 def register():
     data = request.get_json(silent=True) or {}
     full_name = (data.get("fullName") or "").strip()
@@ -50,6 +51,7 @@ def register():
 
 
 @auth_bp.route("/login", methods=["POST"])
+@limiter.limit("5 per minute")
 def login():
     data = request.get_json(silent=True) or {}
     email = (data.get("email") or "").strip().lower()

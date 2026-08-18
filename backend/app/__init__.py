@@ -1,7 +1,7 @@
 from flask import Flask, jsonify
 
 from config import Config
-from app.extensions import db, migrate, jwt, cors
+from app.extensions import db, migrate, jwt, cors, limiter
 
 
 def create_app(config_class=Config):
@@ -11,7 +11,8 @@ def create_app(config_class=Config):
     db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)
-    cors.init_app(app, resources={r"/api/*": {"origins": "*"}})
+    cors.init_app(app, resources={r"/api/*": {"origins": app.config["CORS_ORIGINS"]}})
+    limiter.init_app(app)
 
     from app.auth import auth_bp
     from app.expenses import expenses_bp
@@ -26,6 +27,10 @@ def create_app(config_class=Config):
     @app.route("/api/health")
     def health():
         return jsonify({"status": "ok"}), 200
+
+    @app.errorhandler(429)
+    def rate_limited(e):
+        return jsonify({"error": "Too many requests. Please try again shortly."}), 429
 
     @jwt.unauthorized_loader
     def unauthorized(reason):
