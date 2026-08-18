@@ -10,6 +10,7 @@ import { api, ApiError } from '../api/client';
 import { EXPENSE_CATEGORIES, PAYMENT_METHODS } from '../theme/constants';
 import { BackIcon } from '../components/icons';
 import AnimatedPressable from '../components/AnimatedPressable';
+import DateField from '../components/DateField';
 import type { AppStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'ExpenseForm'>;
@@ -111,13 +112,7 @@ export default function ExpenseFormScreen({ route, navigation }: Props) {
           </View>
           <View style={styles.fieldHalf}>
             <Text style={styles.label}>Date</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="YYYY-MM-DD"
-              placeholderTextColor={colors.textMuted}
-              value={date}
-              onChangeText={setDate}
-            />
+            <DateField value={date} onChange={setDate} />
           </View>
         </View>
 

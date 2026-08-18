@@ -9,3 +9,7 @@ backend/.env
 # (mobile/ has its own .gitignore for node_modules, .expo, etc.)
 
 *.log
+
+# IDEs
+.idea/
+.vscode/
