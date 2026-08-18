@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { createBottomTabNavigator, BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import { Colors } from '../theme/colors';
 import { useAuth } from '../context/AuthContext';
@@ -29,7 +30,8 @@ const TAB_LABELS: Record<string, string> = {
 
 function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const { colors } = useTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const insets = useSafeAreaInsets();
+  const styles = useMemo(() => makeStyles(colors, insets.bottom), [colors, insets.bottom]);
   const { logout } = useAuth();
   const parent = navigation.getParent();
 
@@ -85,11 +87,11 @@ export default function AppTabs() {
   );
 }
 
-const makeStyles = (colors: Colors) => StyleSheet.create({
+const makeStyles = (colors: Colors, bottomInset: number) => StyleSheet.create({
   bar: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around',
     backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.border,
-    paddingVertical: 10, paddingHorizontal: 8,
+    paddingTop: 10, paddingBottom: 10 + bottomInset, paddingHorizontal: 8,
   },
   item: { alignItems: 'center', gap: 2, paddingHorizontal: 6 },
   itemLabel: { fontSize: 10, fontWeight: '600' },

@@ -4,6 +4,7 @@ import {
   Alert, Platform,
 } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInRight, FadeInDown, Layout } from 'react-native-reanimated';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
@@ -21,7 +22,8 @@ import type { Expense } from '../api/types';
 
 export default function ExpensesScreen() {
   const { colors } = useTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const insets = useSafeAreaInsets();
+  const styles = useMemo(() => makeStyles(colors, insets.top), [colors, insets.top]);
   const navigation = useNavigation<any>();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
@@ -218,11 +220,11 @@ export default function ExpensesScreen() {
   );
 }
 
-const makeStyles = (colors: Colors) => StyleSheet.create({
+const makeStyles = (colors: Colors, topInset: number) => StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.bg },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    padding: 20, paddingBottom: 8,
+    padding: 20, paddingTop: 20 + topInset, paddingBottom: 8,
   },
   pageTitle: { color: colors.text, fontSize: 22, fontWeight: '700' },
   exportBtn: {

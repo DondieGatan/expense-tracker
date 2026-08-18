@@ -4,6 +4,7 @@ import {
   ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
@@ -30,7 +31,8 @@ function haptic(type: 'success' | 'error' | 'select') {
 
 export default function ExpenseFormScreen({ route, navigation }: Props) {
   const { colors } = useTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const insets = useSafeAreaInsets();
+  const styles = useMemo(() => makeStyles(colors, insets.top), [colors, insets.top]);
   const expenseId = route.params?.expenseId;
   const isEdit = expenseId != null;
 
@@ -207,10 +209,10 @@ export default function ExpenseFormScreen({ route, navigation }: Props) {
   );
 }
 
-const makeStyles = (colors: Colors) => StyleSheet.create({
+const makeStyles = (colors: Colors, topInset: number) => StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.bg },
   loadingContainer: { flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' },
-  container: { padding: 20, paddingBottom: 60 },
+  container: { padding: 20, paddingTop: 20 + topInset, paddingBottom: 60 },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 20 },
   backLink: {
     width: 34, height: 34, borderRadius: 999, backgroundColor: colors.surface,

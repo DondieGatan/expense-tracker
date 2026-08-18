@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, useWindowDimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { PieChart, BarChart } from 'react-native-chart-kit';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -21,7 +22,8 @@ import type { DashboardData } from '../api/types';
 
 export default function DashboardScreen() {
   const { colors, isDark, toggleTheme } = useTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const insets = useSafeAreaInsets();
+  const styles = useMemo(() => makeStyles(colors, insets.top), [colors, insets.top]);
   const chartConfig = useMemo(() => ({
     backgroundGradientFrom: colors.surface,
     backgroundGradientTo: colors.surface,
@@ -64,7 +66,11 @@ export default function DashboardScreen() {
   const header = (
     <View style={styles.headerRow}>
       <Animated.Text entering={FadeInDown.duration(400)} style={styles.pageTitle}>Dashboard</Animated.Text>
-      <AnimatedPressable style={styles.themeToggle} onPress={toggleTheme}>
+      <AnimatedPressable
+        style={styles.themeToggle}
+        hitSlop={16}
+        onPress={toggleTheme}
+      >
         {isDark ? <SunIcon size={17} color={colors.text} /> : <MoonIcon size={17} color={colors.text} />}
       </AnimatedPressable>
     </View>
@@ -234,9 +240,9 @@ function hexToRgba(hex: string, opacity: number) {
   return `rgba(${r}, ${g}, ${b}, ${opacity})`;
 }
 
-const makeStyles = (colors: Colors) => StyleSheet.create({
+const makeStyles = (colors: Colors, topInset: number) => StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.bg },
-  container: { padding: 20, paddingBottom: 100 },
+  container: { padding: 20, paddingTop: 20 + topInset, paddingBottom: 100 },
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
   pageTitle: { color: colors.text, fontSize: 22, fontWeight: '700' },
   themeToggle: {

@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, TextInput, StyleSheet, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown, FadeIn, Layout } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { Platform } from 'react-native';
@@ -14,7 +15,8 @@ import Skeleton from '../components/Skeleton';
 
 export default function BudgetScreen() {
   const { colors } = useTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const insets = useSafeAreaInsets();
+  const styles = useMemo(() => makeStyles(colors, insets.top), [colors, insets.top]);
   const [monthlyLimit, setMonthlyLimit] = useState('');
   const [thisMonthSpent, setThisMonthSpent] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -141,8 +143,8 @@ export default function BudgetScreen() {
   );
 }
 
-const makeStyles = (colors: Colors) => StyleSheet.create({
-  flex: { flex: 1, backgroundColor: colors.bg, padding: 20 },
+const makeStyles = (colors: Colors, topInset: number) => StyleSheet.create({
+  flex: { flex: 1, backgroundColor: colors.bg, padding: 20, paddingTop: 20 + topInset },
   loadingContainer: { flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' },
   header: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 20 },
   headerIcon: {
