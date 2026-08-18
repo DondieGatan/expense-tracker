@@ -10,7 +10,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://expense-tracker-api.onrender.com/api"
+        "EXPO_PUBLIC_API_URL": "https://expense-tracker-api-hlyz.onrender.com/api"
       }
     },
     "production": {
@@ -19,7 +19,7 @@
         "buildType": "app-bundle"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://expense-tracker-api.onrender.com/api"
+        "EXPO_PUBLIC_API_URL": "https://expense-tracker-api-hlyz.onrender.com/api"
       }
     }
   }
