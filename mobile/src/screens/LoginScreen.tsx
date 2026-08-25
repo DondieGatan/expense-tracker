@@ -8,7 +8,8 @@ import Animated, { FadeInUp, FadeIn } from 'react-native-reanimated';
 import { useTheme } from '../context/ThemeContext';
 import { Colors } from '../theme/colors';
 import { useAuth } from '../context/AuthContext';
-import { MailIcon, LockIcon, EyeIcon } from '../components/icons';
+import { EyeIcon, ArrowRightIcon } from '../components/icons';
+import GlowBlob from '../components/GlowBlob';
 import AnimatedPressable from '../components/AnimatedPressable';
 import type { AuthStackParamList } from '../navigation/types';
 
@@ -35,66 +36,76 @@ export default function LoginScreen({ navigation }: Props) {
     }
   };
 
+  const canSubmit = !submitting && !!email && !!password;
+
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.container}>
         <Animated.View entering={FadeInUp.duration(500).springify().damping(16)} style={styles.card}>
-          <Animated.View entering={FadeIn.duration(500).delay(100)} style={styles.logo}>
-            <View style={styles.logoIcon}>
-              <Image source={require('../../assets/logo-mark.png')} style={styles.logoImage} resizeMode="contain" />
+          <GlowBlob size={200} color={colors.accent} style={styles.glow} />
+
+          <View style={styles.cardContent}>
+            <Animated.View entering={FadeIn.duration(500).delay(100)} style={styles.header}>
+              <View style={styles.logoIcon}>
+                <Image source={require('../../assets/logo-mark.png')} style={styles.logoImage} resizeMode="contain" />
+              </View>
+              <Text style={styles.title}>Welcome back</Text>
+              <Text style={styles.subtitle}>Sign in to your account</Text>
+            </Animated.View>
+
+            {error ? <Text style={styles.error}>{error}</Text> : null}
+            {retryStatus ? <Text style={styles.retryStatus}>{retryStatus}</Text> : null}
+
+            <View style={styles.field}>
+              <Text style={styles.fieldLabel}>Email</Text>
+              <TextInput
+                style={styles.fieldInput}
+                placeholder="you@example.com"
+                placeholderTextColor={colors.textMuted}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                value={email}
+                onChangeText={setEmail}
+              />
             </View>
-            <Text style={styles.title}>ExpenseTracker</Text>
-            <Text style={styles.subtitle}>Track every expense, stay in control.</Text>
-          </Animated.View>
 
-          {error ? <Text style={styles.error}>{error}</Text> : null}
-          {retryStatus ? <Text style={styles.retryStatus}>{retryStatus}</Text> : null}
+            <View style={styles.field}>
+              <View style={styles.passwordRow}>
+                <View style={styles.passwordCol}>
+                  <Text style={styles.fieldLabel}>Password</Text>
+                  <TextInput
+                    style={styles.fieldInput}
+                    placeholder="••••••••"
+                    placeholderTextColor={colors.textMuted}
+                    secureTextEntry={!showPassword}
+                    value={password}
+                    onChangeText={setPassword}
+                    onSubmitEditing={canSubmit ? onSubmit : undefined}
+                  />
+                </View>
+                <TouchableOpacity style={styles.toggleVisibility} onPress={() => setShowPassword((v) => !v)}>
+                  <EyeIcon size={16} color={colors.textMuted} />
+                </TouchableOpacity>
+                <AnimatedPressable
+                  style={[styles.submitCircle, !canSubmit && styles.submitCircleDisabled]}
+                  onPress={onSubmit}
+                  disabled={!canSubmit}
+                >
+                  {submitting ? (
+                    <ActivityIndicator size="small" color={colors.accentContrast} />
+                  ) : (
+                    <ArrowRightIcon size={18} color={colors.accentContrast} />
+                  )}
+                </AnimatedPressable>
+              </View>
+            </View>
 
-          <View style={styles.field}>
-            <View style={styles.fieldIcon}><MailIcon size={16} color={colors.textMuted} /></View>
-            <TextInput
-              style={styles.input}
-              placeholder="you@example.com"
-              placeholderTextColor={colors.textMuted}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              value={email}
-              onChangeText={setEmail}
-            />
-          </View>
-
-          <View style={styles.field}>
-            <View style={styles.fieldIcon}><LockIcon size={16} color={colors.textMuted} /></View>
-            <TextInput
-              style={styles.input}
-              placeholder="Password"
-              placeholderTextColor={colors.textMuted}
-              secureTextEntry={!showPassword}
-              value={password}
-              onChangeText={setPassword}
-            />
-            <TouchableOpacity style={styles.toggleVisibility} onPress={() => setShowPassword((v) => !v)}>
-              <EyeIcon size={16} color={colors.textMuted} />
-            </TouchableOpacity>
-          </View>
-
-          <AnimatedPressable
-            style={[styles.button, submitting && styles.buttonDisabled]}
-            onPress={onSubmit}
-            disabled={submitting || !email || !password}
-          >
-            {submitting ? (
-              <ActivityIndicator color={colors.accentContrast} />
-            ) : (
-              <Text style={styles.buttonText}>Sign In</Text>
-            )}
-          </AnimatedPressable>
-
-          <View style={styles.footerRow}>
-            <Text style={styles.footerText}>Don&apos;t have an account? </Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-              <Text style={styles.footerLink}>Sign up free</Text>
-            </TouchableOpacity>
+            <View style={styles.footerRow}>
+              <Text style={styles.footerText}>Don&apos;t have an account yet? </Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+                <Text style={styles.footerLink}>Sign up</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </Animated.View>
       </ScrollView>
@@ -107,34 +118,37 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
   container: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   card: {
     width: '100%', maxWidth: 380, backgroundColor: colors.surface,
-    borderRadius: 22, padding: 26, borderWidth: 1, borderColor: colors.border,
+    borderRadius: 28, borderWidth: 1, borderColor: colors.border, overflow: 'hidden',
+    shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 24, shadowOffset: { width: 0, height: 12 },
+    elevation: 8,
   },
-  logo: { alignItems: 'center', marginBottom: 22, gap: 6 },
+  glow: { position: 'absolute', top: -60, left: -60 },
+  cardContent: { padding: 28 },
+  header: { marginBottom: 22, gap: 6 },
   logoIcon: {
-    width: 46, height: 46, borderRadius: 14, backgroundColor: '#07090D',
-    alignItems: 'center', justifyContent: 'center', marginBottom: 4,
+    width: 44, height: 44, borderRadius: 14, backgroundColor: '#07090D',
+    alignItems: 'center', justifyContent: 'center', marginBottom: 8,
   },
-  logoImage: { width: 30, height: 30 },
-  logoIconText: { color: colors.accentContrast, fontWeight: '800', fontSize: 20 },
-  title: { color: colors.text, fontSize: 20, fontWeight: '700' },
-  subtitle: { color: colors.textMuted, fontSize: 13 },
-  error: { color: colors.danger, fontSize: 13, marginBottom: 10, textAlign: 'center' },
-  retryStatus: { color: colors.textMuted, fontSize: 13, marginBottom: 10, textAlign: 'center' },
+  logoImage: { width: 28, height: 28 },
+  title: { color: colors.text, fontSize: 28, fontWeight: '800', letterSpacing: -0.4 },
+  subtitle: { color: colors.textMuted, fontSize: 14 },
+  error: { color: colors.danger, fontSize: 13, marginBottom: 10 },
+  retryStatus: { color: colors.textMuted, fontSize: 13, marginBottom: 10 },
   field: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.bg,
-    borderRadius: 14, borderWidth: 1, borderColor: colors.border,
-    paddingHorizontal: 14, marginBottom: 12,
+    backgroundColor: colors.bg, borderRadius: 16, borderWidth: 1, borderColor: colors.border,
+    paddingHorizontal: 16, paddingVertical: 10, marginBottom: 14,
   },
-  fieldIcon: { marginRight: 8 },
-  input: { flex: 1, color: colors.text, paddingVertical: 12, fontSize: 15 },
-  toggleVisibility: { padding: 6 },
-  button: {
-    backgroundColor: colors.accent, borderRadius: 999, paddingVertical: 13,
-    alignItems: 'center', marginTop: 6,
+  fieldLabel: { color: colors.textMuted, fontSize: 11, fontWeight: '600', marginBottom: 2 },
+  fieldInput: { color: colors.text, fontSize: 16, padding: 0 },
+  passwordRow: { flexDirection: 'row', alignItems: 'center' },
+  passwordCol: { flex: 1 },
+  toggleVisibility: { padding: 6, marginLeft: 4 },
+  submitCircle: {
+    width: 44, height: 44, borderRadius: 22, backgroundColor: colors.accent,
+    alignItems: 'center', justifyContent: 'center', marginLeft: 6,
   },
-  buttonDisabled: { opacity: 0.7 },
-  buttonText: { color: colors.accentContrast, fontWeight: '700', fontSize: 15 },
-  footerRow: { flexDirection: 'row', justifyContent: 'center', marginTop: 18 },
+  submitCircleDisabled: { opacity: 0.5 },
+  footerRow: { flexDirection: 'row', justifyContent: 'center', marginTop: 4 },
   footerText: { color: colors.textMuted, fontSize: 13 },
-  footerLink: { color: colors.accent, fontWeight: '700', fontSize: 13 },
+  footerLink: { color: colors.accent, fontWeight: '700', fontSize: 13, textDecorationLine: 'underline' },
 });

@@ -118,6 +118,14 @@ export function ArrowUpIcon({ size, color }: IconProps) {
   );
 }
 
+export function ArrowRightIcon({ size, color }: IconProps) {
+  return (
+    <Svg {...base(size, color)} strokeWidth={2.4}>
+      <Path d="M5 12h14M13 6l6 6-6 6" />
+    </Svg>
+  );
+}
+
 export function TrashIcon({ size, color }: IconProps) {
   return (
     <Svg {...base(size, color)}>
