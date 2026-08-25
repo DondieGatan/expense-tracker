@@ -127,14 +127,14 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
   },
   glow: { position: 'absolute', top: -45, left: -45 },
   cardContent: { padding: 26 },
-  header: { marginBottom: 20, gap: 6 },
+  header: { marginBottom: 20, gap: 6, alignItems: 'center' },
   logoIcon: {
     width: 42, height: 42, borderRadius: 13, backgroundColor: '#07090D',
     alignItems: 'center', justifyContent: 'center', marginBottom: 8,
   },
   logoImage: { width: 26, height: 26 },
-  title: { color: colors.text, fontSize: 25, fontWeight: '700', letterSpacing: -0.3 },
-  subtitle: { color: colors.textMuted, fontSize: 13.5 },
+  title: { color: colors.text, fontSize: 25, fontWeight: '700', letterSpacing: -0.3, textAlign: 'center' },
+  subtitle: { color: colors.textMuted, fontSize: 13.5, textAlign: 'center' },
   error: { color: colors.danger, fontSize: 13, marginBottom: 10 },
   retryStatus: { color: colors.textMuted, fontSize: 13, marginBottom: 10 },
   field: {
