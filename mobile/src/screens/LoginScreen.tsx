@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet,
+  View, Text, TextInput, TouchableOpacity, StyleSheet, Image,
   KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -8,7 +8,7 @@ import Animated, { FadeInUp, FadeIn } from 'react-native-reanimated';
 import { useTheme } from '../context/ThemeContext';
 import { Colors } from '../theme/colors';
 import { useAuth } from '../context/AuthContext';
-import { MailIcon, LockIcon, EyeIcon, LogoMarkIcon } from '../components/icons';
+import { MailIcon, LockIcon, EyeIcon } from '../components/icons';
 import AnimatedPressable from '../components/AnimatedPressable';
 import type { AuthStackParamList } from '../navigation/types';
 
@@ -41,7 +41,7 @@ export default function LoginScreen({ navigation }: Props) {
         <Animated.View entering={FadeInUp.duration(500).springify().damping(16)} style={styles.card}>
           <Animated.View entering={FadeIn.duration(500).delay(100)} style={styles.logo}>
             <View style={styles.logoIcon}>
-              <LogoMarkIcon size={22} color={colors.accentContrast} />
+              <Image source={require('../../assets/logo-mark.png')} style={styles.logoImage} resizeMode="contain" />
             </View>
             <Text style={styles.title}>ExpenseTracker</Text>
             <Text style={styles.subtitle}>Track every expense, stay in control.</Text>
@@ -111,9 +111,10 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
   },
   logo: { alignItems: 'center', marginBottom: 22, gap: 6 },
   logoIcon: {
-    width: 46, height: 46, borderRadius: 14, backgroundColor: colors.accent,
+    width: 46, height: 46, borderRadius: 14, backgroundColor: '#07090D',
     alignItems: 'center', justifyContent: 'center', marginBottom: 4,
   },
+  logoImage: { width: 30, height: 30 },
   logoIconText: { color: colors.accentContrast, fontWeight: '800', fontSize: 20 },
   title: { color: colors.text, fontSize: 20, fontWeight: '700' },
   subtitle: { color: colors.textMuted, fontSize: 13 },

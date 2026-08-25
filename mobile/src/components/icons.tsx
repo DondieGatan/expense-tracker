@@ -17,15 +17,6 @@ const base = (size = 20, color = '#eef8f1') => ({
   strokeLinejoin: 'round' as const,
 });
 
-export function LogoMarkIcon({ size, color }: IconProps) {
-  return (
-    <Svg {...base(size, color)} strokeWidth={2.2}>
-      <Path d="M12 1v22" />
-      <Path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-    </Svg>
-  );
-}
-
 export function HomeIcon({ size, color }: IconProps) {
   return (
     <Svg {...base(size, color)}>
