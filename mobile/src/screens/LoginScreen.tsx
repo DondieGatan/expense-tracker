@@ -11,6 +11,7 @@ import { useAuth } from '../context/AuthContext';
 import { EyeIcon, ArrowRightIcon } from '../components/icons';
 import GlowBlob from '../components/GlowBlob';
 import AnimatedPressable from '../components/AnimatedPressable';
+import { useWebAutofillFix } from '../hooks/useWebAutofillFix';
 import type { AuthStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
@@ -18,6 +19,7 @@ type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 export default function LoginScreen({ navigation }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  useWebAutofillFix(colors.surface, colors.text);
   const { login, error, retryStatus, clearError } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -40,9 +42,9 @@ export default function LoginScreen({ navigation }: Props) {
 
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
         <Animated.View entering={FadeInUp.duration(500).springify().damping(16)} style={styles.card}>
-          <GlowBlob size={200} color={colors.accent} style={styles.glow} />
+          <GlowBlob size={170} color={colors.accent} style={styles.glow} />
 
           <View style={styles.cardContent}>
             <Animated.View entering={FadeIn.duration(500).delay(100)} style={styles.header}>
@@ -94,7 +96,7 @@ export default function LoginScreen({ navigation }: Props) {
                   {submitting ? (
                     <ActivityIndicator size="small" color={colors.accentContrast} />
                   ) : (
-                    <ArrowRightIcon size={18} color={colors.accentContrast} />
+                    <ArrowRightIcon size={16} color={colors.accentContrast} />
                   )}
                 </AnimatedPressable>
               </View>
@@ -115,36 +117,37 @@ export default function LoginScreen({ navigation }: Props) {
 
 const makeStyles = (colors: Colors) => StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.bg },
+  scroll: { flex: 1 },
   container: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   card: {
-    width: '100%', maxWidth: 380, backgroundColor: colors.surface,
+    width: '100%', maxWidth: 380, backgroundColor: colors.bg,
     borderRadius: 28, borderWidth: 1, borderColor: colors.border, overflow: 'hidden',
-    shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 24, shadowOffset: { width: 0, height: 12 },
+    shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 30, shadowOffset: { width: 0, height: 14 },
     elevation: 8,
   },
-  glow: { position: 'absolute', top: -60, left: -60 },
-  cardContent: { padding: 28 },
-  header: { marginBottom: 22, gap: 6 },
+  glow: { position: 'absolute', top: -45, left: -45 },
+  cardContent: { padding: 26 },
+  header: { marginBottom: 20, gap: 6 },
   logoIcon: {
-    width: 44, height: 44, borderRadius: 14, backgroundColor: '#07090D',
+    width: 42, height: 42, borderRadius: 13, backgroundColor: '#07090D',
     alignItems: 'center', justifyContent: 'center', marginBottom: 8,
   },
-  logoImage: { width: 28, height: 28 },
-  title: { color: colors.text, fontSize: 28, fontWeight: '800', letterSpacing: -0.4 },
-  subtitle: { color: colors.textMuted, fontSize: 14 },
+  logoImage: { width: 26, height: 26 },
+  title: { color: colors.text, fontSize: 25, fontWeight: '700', letterSpacing: -0.3 },
+  subtitle: { color: colors.textMuted, fontSize: 13.5 },
   error: { color: colors.danger, fontSize: 13, marginBottom: 10 },
   retryStatus: { color: colors.textMuted, fontSize: 13, marginBottom: 10 },
   field: {
-    backgroundColor: colors.bg, borderRadius: 16, borderWidth: 1, borderColor: colors.border,
-    paddingHorizontal: 16, paddingVertical: 10, marginBottom: 14,
+    backgroundColor: colors.surface, borderRadius: 16, borderWidth: 1, borderColor: colors.border,
+    paddingHorizontal: 16, paddingVertical: 9, marginBottom: 12,
   },
   fieldLabel: { color: colors.textMuted, fontSize: 11, fontWeight: '600', marginBottom: 2 },
-  fieldInput: { color: colors.text, fontSize: 16, padding: 0 },
+  fieldInput: { color: colors.text, fontSize: 15, padding: 0, backgroundColor: 'transparent' },
   passwordRow: { flexDirection: 'row', alignItems: 'center' },
   passwordCol: { flex: 1 },
-  toggleVisibility: { padding: 6, marginLeft: 4 },
+  toggleVisibility: { padding: 6, marginLeft: 2 },
   submitCircle: {
-    width: 44, height: 44, borderRadius: 22, backgroundColor: colors.accent,
+    width: 36, height: 36, borderRadius: 18, backgroundColor: colors.accent,
     alignItems: 'center', justifyContent: 'center', marginLeft: 6,
   },
   submitCircleDisabled: { opacity: 0.5 },
