@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, TextInput, StyleSheet, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,6 +9,8 @@ import { useTheme } from '../context/ThemeContext';
 import { Colors } from '../theme/colors';
 import { api, ApiError } from '../api/client';
 import { formatCurrency } from '../utils/format';
+import { useAuth } from '../context/AuthContext';
+import type { Currency } from '../api/types';
 import { BudgetIcon } from '../components/icons';
 import AnimatedPressable from '../components/AnimatedPressable';
 import Skeleton from '../components/Skeleton';
@@ -17,12 +19,15 @@ export default function BudgetScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(colors, insets.top), [colors, insets.top]);
+  const { user, updateCurrency } = useAuth();
   const [monthlyLimit, setMonthlyLimit] = useState('');
   const [thisMonthSpent, setThisMonthSpent] = useState(0);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [currencies, setCurrencies] = useState<Currency[] | null>(null);
+  const [savingCurrency, setSavingCurrency] = useState<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -44,6 +49,24 @@ export default function BudgetScreen() {
       return () => { active = false; };
     }, [])
   );
+
+  useEffect(() => {
+    api.get('/auth/currencies').then((data) => setCurrencies(data.currencies));
+  }, []);
+
+  const onSelectCurrency = async (code: string) => {
+    if (code === user?.currency || savingCurrency) return;
+    setSavingCurrency(code);
+    try {
+      await updateCurrency(code);
+      if (Platform.OS !== 'web') Haptics.selectionAsync();
+    } catch {
+      // Selection just doesn't visibly change — the chip row re-renders
+      // from user.currency, which only advances on success.
+    } finally {
+      setSavingCurrency(null);
+    }
+  };
 
   const onSubmit = async () => {
     setError(null);
@@ -92,13 +115,41 @@ export default function BudgetScreen() {
         </View>
       </Animated.View>
 
-      <Animated.View entering={FadeInDown.duration(450).delay(80)} style={styles.card}>
+      <Animated.View entering={FadeInDown.duration(450).delay(60)} style={styles.card}>
+        <Text style={styles.label}>Currency</Text>
+        <Text style={styles.currencyHint}>Every amount you enter is in this currency.</Text>
+        {currencies === null ? (
+          <Skeleton height={36} borderRadius={999} />
+        ) : (
+          <View style={styles.currencyRow}>
+            {currencies.map((c) => {
+              const active = c.code === user?.currency;
+              return (
+                <AnimatedPressable
+                  key={c.code}
+                  style={[styles.currencyChip, active && styles.currencyChipActive]}
+                  onPress={() => onSelectCurrency(c.code)}
+                  disabled={savingCurrency !== null}
+                >
+                  {savingCurrency === c.code ? (
+                    <ActivityIndicator size="small" color={active ? colors.accentContrast : colors.text} />
+                  ) : (
+                    <Text style={[styles.currencyChipText, active && styles.currencyChipTextActive]}>{c.code}</Text>
+                  )}
+                </AnimatedPressable>
+              );
+            })}
+          </View>
+        )}
+      </Animated.View>
+
+      <Animated.View entering={FadeInDown.duration(450).delay(120)} style={styles.card}>
         {saved ? <Text style={styles.success}>Budget updated.</Text> : null}
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
         <Text style={styles.label}>Monthly Limit</Text>
         <View style={styles.inputRow}>
-          <Text style={styles.inputPrefix}>AED</Text>
+          <Text style={styles.inputPrefix}>{user?.currency ?? 'AED'}</Text>
           <TextInput
             style={styles.input}
             placeholder="e.g. 15000"
@@ -155,11 +206,21 @@ const makeStyles = (colors: Colors, topInset: number) => StyleSheet.create({
   pageSubtitle: { color: colors.textMuted, fontSize: 12, marginTop: 2 },
   card: {
     backgroundColor: colors.surface, borderRadius: 18, padding: 18,
-    borderWidth: 1, borderColor: colors.border,
+    borderWidth: 1, borderColor: colors.border, marginBottom: 16,
   },
   success: { color: colors.accent, fontSize: 13, marginBottom: 10 },
   error: { color: colors.danger, fontSize: 13, marginBottom: 10 },
   label: { color: colors.textMuted, fontSize: 12, marginBottom: 6 },
+  currencyHint: { color: colors.textMuted, fontSize: 11.5, marginBottom: 12 },
+  currencyRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  currencyChip: {
+    minWidth: 62, height: 36, paddingHorizontal: 14, borderRadius: 999,
+    backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.border,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  currencyChipActive: { backgroundColor: colors.accent, borderColor: colors.accent },
+  currencyChipText: { color: colors.text, fontSize: 13, fontWeight: '700' },
+  currencyChipTextActive: { color: colors.accentContrast },
   inputRow: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
     backgroundColor: colors.bg, borderRadius: 12, borderWidth: 1, borderColor: colors.border,

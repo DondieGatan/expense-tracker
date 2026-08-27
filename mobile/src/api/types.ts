@@ -2,6 +2,12 @@ export interface User {
   id: number;
   fullName: string;
   email: string;
+  currency: string;
+}
+
+export interface Currency {
+  code: string;
+  name: string;
 }
 
 export interface Expense {

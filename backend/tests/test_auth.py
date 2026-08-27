@@ -92,6 +92,57 @@ def test_logout_revokes_the_access_token(client, register_user):
     assert me_resp.status_code == 401
 
 
+def test_new_user_defaults_to_aed_currency(client):
+    resp = client.post(
+        "/api/auth/register",
+        json={"fullName": "Alex Kim", "email": "alex@example.com", "password": "password123"},
+    )
+    assert resp.get_json()["user"]["currency"] == "AED"
+
+
+def test_currencies_lists_supported_codes(client, register_user):
+    headers, _ = register_user()
+    resp = client.get("/api/auth/currencies", headers=headers)
+    assert resp.status_code == 200
+    codes = [c["code"] for c in resp.get_json()["currencies"]]
+    assert "USD" in codes
+    assert "AED" in codes
+
+
+def test_currencies_requires_authentication(client):
+    resp = client.get("/api/auth/currencies")
+    assert resp.status_code == 401
+
+
+def test_update_me_changes_currency(client, register_user):
+    headers, _ = register_user()
+    resp = client.put("/api/auth/me", headers=headers, json={"currency": "USD"})
+    assert resp.status_code == 200
+    assert resp.get_json()["user"]["currency"] == "USD"
+
+    # Persisted, not just echoed back.
+    me_resp = client.get("/api/auth/me", headers=headers)
+    assert me_resp.get_json()["user"]["currency"] == "USD"
+
+
+def test_update_me_is_case_insensitive(client, register_user):
+    headers, _ = register_user()
+    resp = client.put("/api/auth/me", headers=headers, json={"currency": "usd"})
+    assert resp.status_code == 200
+    assert resp.get_json()["user"]["currency"] == "USD"
+
+
+def test_update_me_rejects_unsupported_currency(client, register_user):
+    headers, _ = register_user()
+    resp = client.put("/api/auth/me", headers=headers, json={"currency": "XXX"})
+    assert resp.status_code == 400
+
+
+def test_update_me_requires_authentication(client):
+    resp = client.put("/api/auth/me", json={"currency": "USD"})
+    assert resp.status_code == 401
+
+
 def test_logout_revokes_the_refresh_token_when_provided(client):
     data = client.post(
         "/api/auth/register",

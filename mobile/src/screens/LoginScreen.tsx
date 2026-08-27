@@ -19,7 +19,7 @@ type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 export default function LoginScreen({ navigation }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  useWebAutofillFix(colors.surface, colors.text);
+  useWebAutofillFix('transparent', colors.text);
   const { login, error, retryStatus, clearError } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -62,7 +62,6 @@ export default function LoginScreen({ navigation }: Props) {
               <Text style={styles.fieldLabel}>Email</Text>
               <TextInput
                 style={styles.fieldInput}
-                placeholder="you@example.com"
                 placeholderTextColor={colors.textMuted}
                 autoCapitalize="none"
                 keyboardType="email-address"
@@ -77,7 +76,6 @@ export default function LoginScreen({ navigation }: Props) {
                   <Text style={styles.fieldLabel}>Password</Text>
                   <TextInput
                     style={styles.fieldInput}
-                    placeholder="••••••••"
                     placeholderTextColor={colors.textMuted}
                     secureTextEntry={!showPassword}
                     value={password}
@@ -138,7 +136,7 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
   error: { color: colors.danger, fontSize: 13, marginBottom: 10 },
   retryStatus: { color: colors.textMuted, fontSize: 13, marginBottom: 10 },
   field: {
-    backgroundColor: colors.surface, borderRadius: 16, borderWidth: 1, borderColor: colors.border,
+    backgroundColor: 'transparent', borderRadius: 16, borderWidth: 1, borderColor: colors.border,
     paddingHorizontal: 16, paddingVertical: 9, marginBottom: 12,
   },
   fieldLabel: { color: colors.textMuted, fontSize: 11, fontWeight: '600', marginBottom: 2 },

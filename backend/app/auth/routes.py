@@ -13,6 +13,7 @@ from flask_jwt_extended import (
 from app.auth import auth_bp
 from app.extensions import db, limiter
 from app.models import User, TokenBlocklist
+from app.constants import CURRENCIES, CURRENCY_CODES
 from app.utils import current_user_id
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -97,3 +98,26 @@ def me():
     if user is None:
         return jsonify({"error": "User not found."}), 404
     return jsonify({"user": user.to_dict()}), 200
+
+
+@auth_bp.route("/me", methods=["PUT"])
+@jwt_required()
+def update_me():
+    user = db.session.get(User, current_user_id())
+    if user is None:
+        return jsonify({"error": "User not found."}), 404
+
+    data = request.get_json(silent=True) or {}
+    currency = (data.get("currency") or "").strip().upper()
+    if currency not in CURRENCY_CODES:
+        return jsonify({"error": "Not a supported currency."}), 400
+
+    user.currency = currency
+    db.session.commit()
+    return jsonify({"user": user.to_dict()}), 200
+
+
+@auth_bp.route("/currencies", methods=["GET"])
+@jwt_required()
+def currencies():
+    return jsonify({"currencies": CURRENCIES}), 200

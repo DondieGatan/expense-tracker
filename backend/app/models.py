@@ -12,6 +12,10 @@ class User(db.Model):
     full_name = db.Column(db.String(150), nullable=False)
     email = db.Column(db.String(255), nullable=False, unique=True, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
+    # ISO 4217 code (see app/constants.py:CURRENCIES) — every amount this
+    # user enters/sees is assumed to already be in this currency; there's no
+    # conversion between currencies, just a per-user display/entry unit.
+    currency = db.Column(db.String(3), nullable=False, default="AED", server_default="AED")
     created_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
 
     def set_password(self, password):
@@ -21,7 +25,7 @@ class User(db.Model):
         return check_password_hash(self.password_hash, password)
 
     def to_dict(self):
-        return {"id": self.id, "fullName": self.full_name, "email": self.email}
+        return {"id": self.id, "fullName": self.full_name, "email": self.email, "currency": self.currency}
 
 
 class Expense(db.Model):

@@ -3,6 +3,7 @@ import {
   api, setTokens, getRefreshToken, registerSessionExpiredHandler, registerRetryStatusHandler, ApiError,
 } from '../api/client';
 import { User } from '../api/types';
+import { setCurrency } from '../utils/format';
 
 interface AuthContextValue {
   user: User | null;
@@ -12,7 +13,17 @@ interface AuthContextValue {
   login: (email: string, password: string) => Promise<void>;
   register: (fullName: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  updateCurrency: (currency: string) => Promise<void>;
   clearError: () => void;
+}
+
+// Every place the user object gets set from a server response should also
+// sync the formatter's currency — a single choke point so no call site can
+// forget it (already happened once with the initial /auth/me load before
+// this existed as its own function).
+function applyUser(setUser: (u: User) => void, user: User) {
+  setCurrency(user.currency);
+  setUser(user);
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -35,7 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       refreshTokenRef.current = await getRefreshToken();
       try {
         const data = await api.get('/auth/me');
-        setUser(data.user);
+        applyUser(setUser, data.user);
       } catch {
         setUser(null);
       } finally {
@@ -50,7 +61,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const data = await api.post('/auth/login', { email, password });
       await setTokens(data.accessToken, data.refreshToken);
       refreshTokenRef.current = data.refreshToken;
-      setUser(data.user);
+      applyUser(setUser, data.user);
     } catch (e: any) {
       setError(e.message || 'Login failed.');
       throw e;
@@ -63,7 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const data = await api.post('/auth/register', { fullName, email, password });
       await setTokens(data.accessToken, data.refreshToken);
       refreshTokenRef.current = data.refreshToken;
-      setUser(data.user);
+      applyUser(setUser, data.user);
     } catch (e: any) {
       setError(e.message || 'Registration failed.');
       throw e;
@@ -83,10 +94,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   }, []);
 
+  const updateCurrency = useCallback(async (currency: string) => {
+    const data = await api.put('/auth/me', { currency });
+    applyUser(setUser, data.user);
+  }, []);
+
   const clearError = useCallback(() => setError(null), []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, error, retryStatus, login, register, logout, clearError }}>
+    <AuthContext.Provider
+      value={{ user, loading, error, retryStatus, login, register, logout, updateCurrency, clearError }}
+    >
       {children}
     </AuthContext.Provider>
   );
