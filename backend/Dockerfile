@@ -26,4 +26,6 @@ COPY . .
 ENV SQL_DRIVER="ODBC Driver 18 for SQL Server"
 ENV FLASK_APP="run.py"
 
+# flask db upgrade runs first so a new migration reaches the database before
+# gunicorn starts serving requests against it.
 CMD flask db upgrade && gunicorn "app:create_app()" --bind 0.0.0.0:$PORT
