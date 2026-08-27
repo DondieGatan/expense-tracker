@@ -24,5 +24,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 ENV SQL_DRIVER="ODBC Driver 18 for SQL Server"
+ENV FLASK_APP="run.py"
 
-CMD gunicorn "app:create_app()" --bind 0.0.0.0:$PORT
+CMD flask db upgrade && gunicorn "app:create_app()" --bind 0.0.0.0:$PORT
