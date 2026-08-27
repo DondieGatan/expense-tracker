@@ -51,7 +51,9 @@ export default function BudgetScreen() {
   );
 
   useEffect(() => {
-    api.get('/auth/currencies').then((data) => setCurrencies(data.currencies));
+    api.get('/auth/currencies')
+      .then((data) => setCurrencies(data.currencies))
+      .catch(() => setCurrencies([]));
   }, []);
 
   const onSelectCurrency = async (code: string) => {
