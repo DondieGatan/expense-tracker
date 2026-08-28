@@ -44,6 +44,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     (async () => {
       refreshTokenRef.current = await getRefreshToken();
+      // No stored session at all — skip the network round trip entirely.
+      // It's guaranteed to 401 anyway, but would still pay the full
+      // Render cold-start retry cost (up to ~41s) while blocking the
+      // whole app behind the loading spinner, which is most visitors'
+      // very first experience of the app.
+      if (!refreshTokenRef.current) {
+        setLoading(false);
+        return;
+      }
       try {
         const data = await api.get('/auth/me');
         applyUser(setUser, data.user);
