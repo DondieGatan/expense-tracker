@@ -10,10 +10,13 @@ tracking, dashboard charts, and CSV export on top of full CRUD.
 |---|---|
 | ![Login screen](docs/screenshots/login.png) | ![Dashboard screen](docs/screenshots/dashboard.png) |
 
-**Live backend:** https://expense-tracker-api-hlyz.onrender.com/api/health
-(free-tier hosting — the first request after ~15 min idle takes 30-50s to wake up
-while the instance and its Azure SQL database spin back up; the app retries with
-a "waking up the server" message rather than failing outright)
+**Live web app:** https://expense-tracker-web-rosy.vercel.app
+(backend: https://expense-tracker-api-hlyz.onrender.com — free-tier hosting,
+so the first request after ~15 min idle can take 30-50s to wake up while the
+instance and its Azure SQL database spin back up; the app retries with a
+"waking up the server" message rather than failing outright, and a logged-out
+visitor reaches the login screen immediately regardless, since that path
+doesn't depend on the backend being awake)
 
 ## Architecture
 
