@@ -3,6 +3,10 @@ export const darkColors = {
   surface: '#12261d',
   surface2: '#1a3324',
   border: 'rgba(255,255,255,0.08)',
+  // Barely-there frosted fill for the glass-pill input fields — a solid
+  // `surface` reads as an opaque box; this stays translucent so the auth
+  // background shows through faintly, matching the glass-card look.
+  fieldFill: 'rgba(255,255,255,0.045)',
   text: '#eef8f1',
   textMuted: '#87a396',
   accent: '#74f2a0',
@@ -18,6 +22,7 @@ export const lightColors = {
   surface: '#ffffff',
   surface2: '#eef5f1',
   border: 'rgba(10,23,18,0.10)',
+  fieldFill: 'rgba(10,23,18,0.03)',
   text: '#0e1f17',
   textMuted: '#5f7a6c',
   accent: '#1fae67',

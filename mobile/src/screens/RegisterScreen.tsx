@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import Animated, { FadeInUp, FadeIn } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../context/ThemeContext';
 import { Colors } from '../theme/colors';
 import { useAuth } from '../context/AuthContext';
@@ -132,6 +133,12 @@ export default function RegisterScreen({ navigation }: Props) {
                 onPress={onSubmit}
                 disabled={!canSubmit}
               >
+                <LinearGradient
+                  colors={[colors.accent, colors.accentStrong]}
+                  start={{ x: 0.15, y: 0 }}
+                  end={{ x: 0.85, y: 1 }}
+                  style={StyleSheet.absoluteFill}
+                />
                 {submitting ? (
                   <ActivityIndicator size="small" color={colors.accentContrast} />
                 ) : (
@@ -198,8 +205,8 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
   error: { color: colors.danger, fontSize: 13, marginBottom: 10 },
   retryStatus: { color: colors.textMuted, fontSize: 13, marginBottom: 10 },
   field: {
-    borderBottomWidth: 1, borderBottomColor: colors.border,
-    paddingVertical: 9, marginBottom: 12,
+    backgroundColor: colors.fieldFill, borderWidth: 1, borderColor: colors.border,
+    borderRadius: 20, paddingHorizontal: 18, paddingVertical: 12, marginBottom: 12,
   },
   fieldLabel: { color: colors.textMuted, fontSize: 11, fontWeight: '600', marginBottom: 2 },
   // outlineWidth: 0 suppresses the browser's default focus rectangle on web
@@ -219,7 +226,7 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
   passwordCol: { flex: 1 },
   toggleVisibility: { padding: 6, marginLeft: 2 },
   submitCircle: {
-    width: 36, height: 36, borderRadius: 18, backgroundColor: colors.accent,
+    width: 38, height: 38, borderRadius: 19, overflow: 'hidden',
     alignItems: 'center', justifyContent: 'center', marginLeft: 6,
   },
   submitCircleDisabled: { opacity: 0.5 },
