@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet, Image,
+  View, Text, TextInput, TouchableOpacity, StyleSheet, Image, ImageBackground,
   KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -17,7 +17,7 @@ import type { AuthStackParamList } from '../navigation/types';
 type Props = NativeStackScreenProps<AuthStackParamList, 'Register'>;
 
 export default function RegisterScreen({ navigation }: Props) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   useWebAutofillFix(colors.surface, colors.text);
   const { register, error, retryStatus, clearError } = useAuth();
@@ -41,94 +41,114 @@ export default function RegisterScreen({ navigation }: Props) {
 
   const canSubmit = !submitting && !!fullName && !!email && password.length >= 6;
 
-  return (
-    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
-        <Animated.View entering={FadeInUp.duration(500).springify().damping(16)} style={styles.card}>
-          <GlowBlob size={170} color={colors.accent} style={styles.glow} />
+  const content = (
+    <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
+      <Animated.View entering={FadeInUp.duration(500).springify().damping(16)} style={styles.card}>
+        <GlowBlob size={170} color={colors.accent} style={styles.glow} />
 
-          <View style={styles.cardContent}>
-            <Animated.View entering={FadeIn.duration(500).delay(100)} style={styles.header}>
-              <View style={styles.logoIcon}>
-                <Image source={require('../../assets/logo-mark.png')} style={styles.logoImage} resizeMode="contain" />
+        <View style={styles.cardContent}>
+          <Animated.View entering={FadeIn.duration(500).delay(100)} style={styles.header}>
+            <View style={styles.logoIcon}>
+              <Image source={require('../../assets/logo-mark.png')} style={styles.logoImage} resizeMode="contain" />
+            </View>
+            <Text style={styles.title}>Create your account</Text>
+            <Text style={styles.subtitle}>Start tracking your spending in minutes.</Text>
+          </Animated.View>
+
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+          {retryStatus ? <Text style={styles.retryStatus}>{retryStatus}</Text> : null}
+
+          <View style={styles.field}>
+            <Text style={styles.fieldLabel}>Full name</Text>
+            <TextInput
+              style={styles.fieldInput}
+              placeholder="Jane Doe"
+              placeholderTextColor={colors.textMuted}
+              value={fullName}
+              onChangeText={setFullName}
+            />
+          </View>
+
+          <View style={styles.field}>
+            <Text style={styles.fieldLabel}>Email</Text>
+            <TextInput
+              style={styles.fieldInput}
+              placeholder="you@example.com"
+              placeholderTextColor={colors.textMuted}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              value={email}
+              onChangeText={setEmail}
+            />
+          </View>
+
+          <View style={styles.field}>
+            <View style={styles.passwordRow}>
+              <View style={styles.passwordCol}>
+                <Text style={styles.fieldLabel}>Password</Text>
+                <TextInput
+                  style={styles.fieldInput}
+                  placeholder="min. 6 characters"
+                  placeholderTextColor={colors.textMuted}
+                  secureTextEntry={!showPassword}
+                  value={password}
+                  onChangeText={setPassword}
+                  onSubmitEditing={canSubmit ? onSubmit : undefined}
+                />
               </View>
-              <Text style={styles.title}>Create your account</Text>
-              <Text style={styles.subtitle}>Start tracking your spending in minutes.</Text>
-            </Animated.View>
-
-            {error ? <Text style={styles.error}>{error}</Text> : null}
-            {retryStatus ? <Text style={styles.retryStatus}>{retryStatus}</Text> : null}
-
-            <View style={styles.field}>
-              <Text style={styles.fieldLabel}>Full name</Text>
-              <TextInput
-                style={styles.fieldInput}
-                placeholder="Jane Doe"
-                placeholderTextColor={colors.textMuted}
-                value={fullName}
-                onChangeText={setFullName}
-              />
-            </View>
-
-            <View style={styles.field}>
-              <Text style={styles.fieldLabel}>Email</Text>
-              <TextInput
-                style={styles.fieldInput}
-                placeholder="you@example.com"
-                placeholderTextColor={colors.textMuted}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                value={email}
-                onChangeText={setEmail}
-              />
-            </View>
-
-            <View style={styles.field}>
-              <View style={styles.passwordRow}>
-                <View style={styles.passwordCol}>
-                  <Text style={styles.fieldLabel}>Password</Text>
-                  <TextInput
-                    style={styles.fieldInput}
-                    placeholder="min. 6 characters"
-                    placeholderTextColor={colors.textMuted}
-                    secureTextEntry={!showPassword}
-                    value={password}
-                    onChangeText={setPassword}
-                    onSubmitEditing={canSubmit ? onSubmit : undefined}
-                  />
-                </View>
-                <TouchableOpacity style={styles.toggleVisibility} onPress={() => setShowPassword((v) => !v)}>
-                  <EyeIcon size={16} color={colors.textMuted} />
-                </TouchableOpacity>
-                <AnimatedPressable
-                  style={[styles.submitCircle, !canSubmit && styles.submitCircleDisabled]}
-                  onPress={onSubmit}
-                  disabled={!canSubmit}
-                >
-                  {submitting ? (
-                    <ActivityIndicator size="small" color={colors.accentContrast} />
-                  ) : (
-                    <ArrowRightIcon size={16} color={colors.accentContrast} />
-                  )}
-                </AnimatedPressable>
-              </View>
-            </View>
-
-            <View style={styles.footerRow}>
-              <Text style={styles.footerText}>Already have an account? </Text>
-              <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-                <Text style={styles.footerLink}>Sign in</Text>
+              <TouchableOpacity style={styles.toggleVisibility} onPress={() => setShowPassword((v) => !v)}>
+                <EyeIcon size={16} color={colors.textMuted} />
               </TouchableOpacity>
+              <AnimatedPressable
+                style={[styles.submitCircle, !canSubmit && styles.submitCircleDisabled]}
+                onPress={onSubmit}
+                disabled={!canSubmit}
+              >
+                {submitting ? (
+                  <ActivityIndicator size="small" color={colors.accentContrast} />
+                ) : (
+                  <ArrowRightIcon size={16} color={colors.accentContrast} />
+                )}
+              </AnimatedPressable>
             </View>
           </View>
-        </Animated.View>
-      </ScrollView>
+
+          <View style={styles.footerRow}>
+            <Text style={styles.footerText}>Already have an account? </Text>
+            <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+              <Text style={styles.footerLink}>Sign in</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Animated.View>
+    </ScrollView>
+  );
+
+  return (
+    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      {isDark ? (
+        <ImageBackground
+          source={require('../../assets/auth-background.jpg')}
+          style={styles.flex}
+          imageStyle={styles.backgroundImage}
+          resizeMode="cover"
+        >
+          {content}
+        </ImageBackground>
+      ) : (
+        <View style={[styles.flex, { backgroundColor: colors.bg }]}>{content}</View>
+      )}
     </KeyboardAvoidingView>
   );
 }
 
 const makeStyles = (colors: Colors) => StyleSheet.create({
-  flex: { flex: 1, backgroundColor: colors.bg },
+  flex: { flex: 1 },
+  // react-native-web renders a required local image at its own intrinsic
+  // pixel size by default — resizeMode="cover" alone doesn't stretch it,
+  // only object-fit does, and that needs an explicit 100%/100% box to
+  // actually have something to fit into.
+  backgroundImage: { width: '100%', height: '100%' },
   scroll: { flex: 1 },
   container: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   card: {
