@@ -160,7 +160,7 @@ export default function LoginScreen({ navigation }: Props) {
 
           <View style={styles.footerRow}>
             <Text style={styles.footerText}>Don&apos;t have an account yet? </Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+            <TouchableOpacity onPress={() => { clearError(); navigation.navigate('Register'); }}>
               <Text style={styles.footerLink}>Sign up</Text>
             </TouchableOpacity>
           </View>

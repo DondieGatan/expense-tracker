@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View, Text, StyleSheet, TextInput, FlatList,
   Alert, Platform,
@@ -30,6 +30,7 @@ export default function ExpensesScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [category, setCategory] = useState<string | null>(null);
 
   const load = useCallback(async (q: string, cat: string | null, isRefresh = false) => {
@@ -46,10 +47,19 @@ export default function ExpensesScreen() {
     }
   }, []);
 
+  // Debounced so typing a search query doesn't fire one request per
+  // keystroke — the list endpoint shares the default rate limit (50/hour)
+  // with the rest of the API, and a longer query could burn through a
+  // meaningful chunk of it on its own.
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
   useFocusEffect(
     useCallback(() => {
-      load(search, category);
-    }, [load, search, category])
+      load(debouncedSearch, category);
+    }, [load, debouncedSearch, category])
   );
 
   const onDelete = (id: number, description: string) => {

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   View, Text, TextInput, StyleSheet,
-  ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform,
+  ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform, Alert,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,7 +11,7 @@ import { useTheme } from '../context/ThemeContext';
 import { Colors } from '../theme/colors';
 import { api, ApiError } from '../api/client';
 import { EXPENSE_CATEGORIES, PAYMENT_METHODS, QUICK_ADD_TEMPLATES } from '../theme/constants';
-import { BackIcon, CategoryIcon } from '../components/icons';
+import { BackIcon, CategoryIcon, TrashIcon } from '../components/icons';
 import AnimatedPressable from '../components/AnimatedPressable';
 import DateField from '../components/DateField';
 import type { AppStackParamList } from '../navigation/types';
@@ -29,6 +29,20 @@ function haptic(type: 'success' | 'error' | 'select') {
   else Haptics.selectionAsync();
 }
 
+// RN Web's Alert.alert() is a no-op stub, so a confirmation on web needs its
+// own path — this is the only delete entry point for the whole app on web,
+// since SwipeableRow renders as a plain non-swipeable wrapper there.
+function confirmDelete(description: string, onConfirm: () => void) {
+  if (Platform.OS === 'web') {
+    if (window.confirm(`Delete "${description}"?`)) onConfirm();
+    return;
+  }
+  Alert.alert('Delete expense', `Delete "${description}"?`, [
+    { text: 'Cancel', style: 'cancel' },
+    { text: 'Delete', style: 'destructive', onPress: onConfirm },
+  ]);
+}
+
 export default function ExpenseFormScreen({ route, navigation }: Props) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
@@ -44,6 +58,7 @@ export default function ExpenseFormScreen({ route, navigation }: Props) {
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(isEdit);
   const [submitting, setSubmitting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -92,6 +107,21 @@ export default function ExpenseFormScreen({ route, navigation }: Props) {
     }
   };
 
+  const onDelete = () => {
+    confirmDelete(description, async () => {
+      setDeleting(true);
+      try {
+        await api.delete(`/expenses/${expenseId}`);
+        haptic('success');
+        navigation.goBack();
+      } catch (e) {
+        haptic('error');
+        setError(e instanceof ApiError ? e.message : 'Something went wrong.');
+        setDeleting(false);
+      }
+    });
+  };
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -108,6 +138,15 @@ export default function ExpenseFormScreen({ route, navigation }: Props) {
             <BackIcon size={16} color={colors.text} />
           </AnimatedPressable>
           <Text style={styles.pageTitle}>{isEdit ? 'Edit Expense' : 'Add Expense'}</Text>
+          {isEdit ? (
+            <AnimatedPressable style={styles.deleteLink} onPress={onDelete} disabled={deleting}>
+              {deleting ? (
+                <ActivityIndicator size="small" color={colors.danger} />
+              ) : (
+                <TrashIcon size={16} color={colors.danger} />
+              )}
+            </AnimatedPressable>
+          ) : null}
         </Animated.View>
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -218,7 +257,11 @@ const makeStyles = (colors: Colors, topInset: number) => StyleSheet.create({
     width: 34, height: 34, borderRadius: 999, backgroundColor: colors.surface,
     borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center',
   },
-  pageTitle: { color: colors.text, fontSize: 20, fontWeight: '700' },
+  pageTitle: { flex: 1, color: colors.text, fontSize: 20, fontWeight: '700' },
+  deleteLink: {
+    width: 34, height: 34, borderRadius: 999, backgroundColor: colors.dangerSoft,
+    alignItems: 'center', justifyContent: 'center',
+  },
   error: { color: colors.danger, fontSize: 13, marginBottom: 12 },
   label: { color: colors.textMuted, fontSize: 12, marginBottom: 6, marginTop: 14 },
   input: {
