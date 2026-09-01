@@ -1,6 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet, Image, ImageBackground,
+  View, Text, TextInput, TouchableOpacity, Pressable, StyleSheet, Image, ImageBackground,
   KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -25,6 +25,8 @@ export default function LoginScreen({ navigation }: Props) {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const emailRef = useRef<TextInput>(null);
+  const passwordRef = useRef<TextInput>(null);
 
   const onSubmit = async () => {
     clearError();
@@ -57,9 +59,10 @@ export default function LoginScreen({ navigation }: Props) {
           {error ? <Text style={styles.error}>{error}</Text> : null}
           {retryStatus ? <Text style={styles.retryStatus}>{retryStatus}</Text> : null}
 
-          <View style={styles.field}>
+          <Pressable style={styles.field} onPress={() => emailRef.current?.focus()}>
             <Text style={styles.fieldLabel}>Email</Text>
             <TextInput
+              ref={emailRef}
               style={styles.fieldInput}
               placeholderTextColor={colors.textMuted}
               autoCapitalize="none"
@@ -67,13 +70,14 @@ export default function LoginScreen({ navigation }: Props) {
               value={email}
               onChangeText={setEmail}
             />
-          </View>
+          </Pressable>
 
-          <View style={styles.field}>
+          <Pressable style={styles.field} onPress={() => passwordRef.current?.focus()}>
             <View style={styles.passwordRow}>
               <View style={styles.passwordCol}>
                 <Text style={styles.fieldLabel}>Password</Text>
                 <TextInput
+                  ref={passwordRef}
                   style={styles.fieldInput}
                   placeholderTextColor={colors.textMuted}
                   secureTextEntry={!showPassword}
@@ -97,7 +101,7 @@ export default function LoginScreen({ navigation }: Props) {
                 )}
               </AnimatedPressable>
             </View>
-          </View>
+          </Pressable>
 
           <View style={styles.footerRow}>
             <Text style={styles.footerText}>Don&apos;t have an account yet? </Text>
@@ -156,8 +160,8 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
   error: { color: colors.danger, fontSize: 13, marginBottom: 10 },
   retryStatus: { color: colors.textMuted, fontSize: 13, marginBottom: 10 },
   field: {
-    backgroundColor: 'transparent', borderRadius: 16, borderWidth: 1, borderColor: colors.border,
-    paddingHorizontal: 16, paddingVertical: 9, marginBottom: 12,
+    borderBottomWidth: 1, borderBottomColor: colors.border,
+    paddingVertical: 9, marginBottom: 12,
   },
   fieldLabel: { color: colors.textMuted, fontSize: 11, fontWeight: '600', marginBottom: 2 },
   fieldInput: { color: colors.text, fontSize: 15, padding: 0, backgroundColor: 'transparent' },
