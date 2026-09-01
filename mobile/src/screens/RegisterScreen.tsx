@@ -4,15 +4,16 @@ import {
   KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import Animated, { FadeInUp, FadeIn } from 'react-native-reanimated';
+import Animated, { FadeInUp, FadeIn, ZoomIn } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../context/ThemeContext';
 import { Colors } from '../theme/colors';
 import { useAuth } from '../context/AuthContext';
-import { EyeIcon, ArrowRightIcon } from '../components/icons';
+import { EyeIcon, EyeOffIcon, ArrowRightIcon } from '../components/icons';
 import GlowBlob from '../components/GlowBlob';
 import AnimatedPressable from '../components/AnimatedPressable';
 import { useWebAutofillFix } from '../hooks/useWebAutofillFix';
+import { useWebFont, webFontFamily } from '../hooks/useWebFont';
 import type { AuthStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Register'>;
@@ -35,6 +36,7 @@ export default function RegisterScreen({ navigation }: Props) {
   // the size of the autofilled <input>, visible as a seam against the
   // translucent fieldFill everywhere else in the same pill.
   useWebAutofillFix('transparent', colors.text);
+  useWebFont();
   const { register, error, retryStatus, clearError } = useAuth();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -148,9 +150,18 @@ export default function RegisterScreen({ navigation }: Props) {
                   onBlur={() => setFocusedField((f) => (f === 'password' ? null : f))}
                 />
               </View>
-              <TouchableOpacity style={styles.toggleVisibility} onPress={() => setShowPassword((v) => !v)}>
-                <EyeIcon size={16} color={colors.textMuted} />
-              </TouchableOpacity>
+              <AnimatedPressable style={styles.toggleVisibility} onPress={() => setShowPassword((v) => !v)}>
+                {/* key forces a remount on each toggle so `entering` replays —
+                    a plain conditional swap with no key change wouldn't
+                    re-trigger the animation on the second and later toggles. */}
+                <Animated.View key={showPassword ? 'off' : 'on'} entering={ZoomIn.duration(180)}>
+                  {showPassword ? (
+                    <EyeOffIcon size={16} color={colors.textMuted} />
+                  ) : (
+                    <EyeIcon size={16} color={colors.textMuted} />
+                  )}
+                </Animated.View>
+              </AnimatedPressable>
               <AnimatedPressable
                 style={[styles.submitCircle, !canSubmit && styles.submitCircleDisabled]}
                 onPress={onSubmit}
@@ -228,10 +239,13 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', marginBottom: 8,
   },
   logoImage: { width: 26, height: 26 },
-  title: { color: colors.text, fontSize: 23, fontWeight: '700', letterSpacing: -0.3, textAlign: 'center' },
-  subtitle: { color: colors.textMuted, fontSize: 13.5, textAlign: 'center' },
-  error: { color: colors.danger, fontSize: 13, marginBottom: 10 },
-  retryStatus: { color: colors.textMuted, fontSize: 13, marginBottom: 10 },
+  title: {
+    color: colors.text, fontFamily: webFontFamily, fontSize: 26, fontWeight: '800',
+    letterSpacing: -0.4, textAlign: 'center',
+  },
+  subtitle: { color: colors.textMuted, fontFamily: webFontFamily, fontSize: 14, textAlign: 'center' },
+  error: { color: colors.danger, fontFamily: webFontFamily, fontSize: 13, marginBottom: 10 },
+  retryStatus: { color: colors.textMuted, fontFamily: webFontFamily, fontSize: 13, marginBottom: 10 },
   field: {
     backgroundColor: colors.fieldFill, borderWidth: 1, borderColor: colors.border,
     borderRadius: 20, paddingHorizontal: 18, paddingVertical: 12, marginBottom: 12,
@@ -244,9 +258,12 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
   // some engines don't fully suppress at width 0), so this replaces it
   // with something that's actually on-brand instead of fighting it further.
   fieldFocused: { borderColor: colors.accent, borderWidth: 1.5 },
-  fieldLabel: { color: colors.textMuted, fontSize: 11, fontWeight: '600', marginBottom: 2 },
+  fieldLabel: {
+    color: colors.textMuted, fontFamily: webFontFamily, fontSize: 11, fontWeight: '600',
+    letterSpacing: 0.2, marginBottom: 2,
+  },
   fieldInput: {
-    color: colors.text, fontSize: 15, padding: 0, backgroundColor: 'transparent',
+    color: colors.text, fontFamily: webFontFamily, fontSize: 15.5, padding: 0, backgroundColor: 'transparent',
     // Still suppressed here too, belt-and-suspenders alongside fieldFocused
     // above — outlineStyle: 'solid' (rather than leaving it at the default
     // "auto") avoids the native-rendering path that ignored width: 0.
@@ -263,6 +280,9 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
   },
   submitCircleDisabled: { opacity: 0.5 },
   footerRow: { flexDirection: 'row', justifyContent: 'center', marginTop: 4 },
-  footerText: { color: colors.textMuted, fontSize: 13 },
-  footerLink: { color: colors.accent, fontWeight: '700', fontSize: 13, textDecorationLine: 'underline' },
+  footerText: { color: colors.textMuted, fontFamily: webFontFamily, fontSize: 13 },
+  footerLink: {
+    color: colors.accent, fontFamily: webFontFamily, fontWeight: '700', fontSize: 13,
+    textDecorationLine: 'underline',
+  },
 });

@@ -110,6 +110,16 @@ export function EyeIcon({ size, color }: IconProps) {
   );
 }
 
+export function EyeOffIcon({ size, color }: IconProps) {
+  return (
+    <Svg {...base(size, color)}>
+      <Path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a17.9 17.9 0 0 1-3.16 4.3M6.6 6.6C3.9 8.36 2 12 2 12s4 8 11 8a9.6 9.6 0 0 0 5.4-1.6" />
+      <Path d="M9.5 9.5A3 3 0 0 0 12 15a3 3 0 0 0 2.5-1.34" />
+      <Line x1={1} y1={1} x2={23} y2={23} />
+    </Svg>
+  );
+}
+
 export function ArrowUpIcon({ size, color }: IconProps) {
   return (
     <Svg {...base(size, color)}>
