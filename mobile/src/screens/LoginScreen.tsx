@@ -36,6 +36,7 @@ export default function LoginScreen({ navigation }: Props) {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [focusedField, setFocusedField] = useState<'email' | 'password' | null>(null);
   const emailRef = useRef<TextInput>(null);
   const passwordRef = useRef<TextInput>(null);
 
@@ -71,7 +72,7 @@ export default function LoginScreen({ navigation }: Props) {
           {retryStatus ? <Text style={styles.retryStatus}>{retryStatus}</Text> : null}
 
           <Pressable
-            style={styles.field}
+            style={[styles.field, focusedField === 'email' && styles.fieldFocused]}
             onPress={() => emailRef.current?.focus()}
             {...notFocusable}
           >
@@ -84,11 +85,13 @@ export default function LoginScreen({ navigation }: Props) {
               keyboardType="email-address"
               value={email}
               onChangeText={setEmail}
+              onFocus={() => setFocusedField('email')}
+              onBlur={() => setFocusedField((f) => (f === 'email' ? null : f))}
             />
           </Pressable>
 
           <Pressable
-            style={styles.field}
+            style={[styles.field, focusedField === 'password' && styles.fieldFocused]}
             onPress={() => passwordRef.current?.focus()}
             {...notFocusable}
           >
@@ -103,6 +106,8 @@ export default function LoginScreen({ navigation }: Props) {
                   value={password}
                   onChangeText={setPassword}
                   onSubmitEditing={canSubmit ? onSubmit : undefined}
+                  onFocus={() => setFocusedField('password')}
+                  onBlur={() => setFocusedField((f) => (f === 'password' ? null : f))}
                 />
               </View>
               <TouchableOpacity style={styles.toggleVisibility} onPress={() => setShowPassword((v) => !v)}>
@@ -113,17 +118,22 @@ export default function LoginScreen({ navigation }: Props) {
                 onPress={onSubmit}
                 disabled={!canSubmit}
               >
+                {/* The gradient has to be the element the icon sits INSIDE, not an
+                    absolutely-positioned sibling behind it — position:absolute
+                    elements paint above normal in-flow siblings regardless of
+                    DOM order, which was hiding the arrow behind a solid fill. */}
                 <LinearGradient
                   colors={[colors.accent, colors.accentStrong]}
                   start={{ x: 0.15, y: 0 }}
                   end={{ x: 0.85, y: 1 }}
-                  style={StyleSheet.absoluteFill}
-                />
-                {submitting ? (
-                  <ActivityIndicator size="small" color={colors.accentContrast} />
-                ) : (
-                  <ArrowRightIcon size={16} color={colors.accentContrast} />
-                )}
+                  style={styles.submitCircleGradient}
+                >
+                  {submitting ? (
+                    <ActivityIndicator size="small" color={colors.accentContrast} />
+                  ) : (
+                    <ArrowRightIcon size={16} color={colors.accentContrast} />
+                  )}
+                </LinearGradient>
               </AnimatedPressable>
             </View>
           </Pressable>
@@ -188,26 +198,30 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
     backgroundColor: colors.fieldFill, borderWidth: 1, borderColor: colors.border,
     borderRadius: 20, paddingHorizontal: 18, paddingVertical: 12, marginBottom: 12,
   },
+  // Deliberate accent-colored ring while a field is focused, driven by JS
+  // state rather than the browser's own :focus outline — the native ring
+  // rendered as a plain white/black rectangle regardless of the
+  // outlineWidth/outlineColor overrides below (Chromium's default
+  // outline-style computes as "auto", which has its own native rendering
+  // some engines don't fully suppress at width 0), so this replaces it
+  // with something that's actually on-brand instead of fighting it further.
+  fieldFocused: { borderColor: colors.accent, borderWidth: 1.5 },
   fieldLabel: { color: colors.textMuted, fontSize: 11, fontWeight: '600', marginBottom: 2 },
-  // outlineWidth: 0 suppresses the browser's default focus rectangle on web
-  // (react-native-web maps straight to CSS outline) — the field's own
-  // bottom-border already shows which one you're in, so the native ring
-  // is redundant and clashes with the glass look. No-op on native, where
-  // there's no such outline to begin with.
   fieldInput: {
     color: colors.text, fontSize: 15, padding: 0, backgroundColor: 'transparent',
-    // Belt-and-suspenders: outlineWidth: 0 alone left a faint ring visible
-    // in some render paths (outline-style computed as "auto", which a couple
-    // of engines don't fully collapse at width 0) — an explicitly
-    // transparent color has nothing to render regardless of width/style.
-    outlineWidth: 0, outlineColor: 'transparent',
+    // Still suppressed here too, belt-and-suspenders alongside fieldFocused
+    // above — outlineStyle: 'solid' (rather than leaving it at the default
+    // "auto") avoids the native-rendering path that ignored width: 0.
+    outlineWidth: 0, outlineColor: 'transparent', outlineStyle: 'solid',
   },
   passwordRow: { flexDirection: 'row', alignItems: 'center' },
   passwordCol: { flex: 1 },
   toggleVisibility: { padding: 6, marginLeft: 2 },
   submitCircle: {
-    width: 38, height: 38, borderRadius: 19, overflow: 'hidden',
-    alignItems: 'center', justifyContent: 'center', marginLeft: 6,
+    width: 38, height: 38, borderRadius: 19, overflow: 'hidden', marginLeft: 6,
+  },
+  submitCircleGradient: {
+    width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center',
   },
   submitCircleDisabled: { opacity: 0.5 },
   footerRow: { flexDirection: 'row', justifyContent: 'center', marginTop: 4 },
