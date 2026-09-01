@@ -30,7 +30,11 @@ const notFocusable = { tabIndex: -1 } as any;
 export default function RegisterScreen({ navigation }: Props) {
   const { colors, isDark } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  useWebAutofillFix(colors.surface, colors.text);
+  // 'transparent', matching LoginScreen — colors.surface (a leftover from
+  // before the glass-pill redesign) painted an opaque rectangle exactly
+  // the size of the autofilled <input>, visible as a seam against the
+  // translucent fieldFill everywhere else in the same pill.
+  useWebAutofillFix('transparent', colors.text);
   const { register, error, retryStatus, clearError } = useAuth();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -79,11 +83,20 @@ export default function RegisterScreen({ navigation }: Props) {
             {...notFocusable}
           >
             <Text style={styles.fieldLabel}>Full name</Text>
+            {/* autoComplete="off" (here and below) asks the browser not to
+                offer/fill saved values — this is a per-browser-profile thing,
+                not something the page fully controls: it works reliably for
+                an ordinary field like this one, but Chrome specifically
+                ignores "off" on password-shaped inputs and often on the email
+                field right above one, by design, so a browser that already
+                has a credential saved for this site may still offer it
+                regardless of this attribute. */}
             <TextInput
               ref={fullNameRef}
               style={styles.fieldInput}
               placeholder="Jane Doe"
               placeholderTextColor={colors.textMuted}
+              autoComplete="off"
               value={fullName}
               onChangeText={setFullName}
               onFocus={() => setFocusedField('fullName')}
@@ -104,6 +117,7 @@ export default function RegisterScreen({ navigation }: Props) {
               placeholderTextColor={colors.textMuted}
               autoCapitalize="none"
               keyboardType="email-address"
+              autoComplete="off"
               value={email}
               onChangeText={setEmail}
               onFocus={() => setFocusedField('email')}
@@ -125,6 +139,11 @@ export default function RegisterScreen({ navigation }: Props) {
                   placeholder="min. 6 characters"
                   placeholderTextColor={colors.textMuted}
                   secureTextEntry={!showPassword}
+                  // "new-password" (not "off") — the semantically correct
+                  // token for a create-account field, and unlike "off" it's
+                  // one Chrome actually respects: it stops the browser
+                  // offering an existing saved password for this site here.
+                  autoComplete="new-password"
                   value={password}
                   onChangeText={setPassword}
                   onSubmitEditing={canSubmit ? onSubmit : undefined}

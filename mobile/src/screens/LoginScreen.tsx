@@ -77,12 +77,20 @@ export default function LoginScreen({ navigation }: Props) {
             {...notFocusable}
           >
             <Text style={styles.fieldLabel}>Email</Text>
+            {/* autoComplete="off" asks the browser not to offer/fill saved
+                values — this is a per-browser-profile thing, not something the
+                page fully controls: it works reliably for ordinary fields, but
+                Chrome specifically ignores "off" on password-shaped inputs and
+                often on the email field right above one, by design, so a
+                browser that already has a credential saved for this site may
+                still offer it regardless of this attribute. */}
             <TextInput
               ref={emailRef}
               style={styles.fieldInput}
               placeholderTextColor={colors.textMuted}
               autoCapitalize="none"
               keyboardType="email-address"
+              autoComplete="off"
               value={email}
               onChangeText={setEmail}
               onFocus={() => setFocusedField('email')}
@@ -103,6 +111,7 @@ export default function LoginScreen({ navigation }: Props) {
                   style={styles.fieldInput}
                   placeholderTextColor={colors.textMuted}
                   secureTextEntry={!showPassword}
+                  autoComplete="off"
                   value={password}
                   onChangeText={setPassword}
                   onSubmitEditing={canSubmit ? onSubmit : undefined}
