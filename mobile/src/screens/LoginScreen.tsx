@@ -164,7 +164,12 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
     paddingVertical: 9, marginBottom: 12,
   },
   fieldLabel: { color: colors.textMuted, fontSize: 11, fontWeight: '600', marginBottom: 2 },
-  fieldInput: { color: colors.text, fontSize: 15, padding: 0, backgroundColor: 'transparent' },
+  // outlineWidth: 0 suppresses the browser's default focus rectangle on web
+  // (react-native-web maps straight to CSS outline) — the field's own
+  // bottom-border already shows which one you're in, so the native ring
+  // is redundant and clashes with the glass look. No-op on native, where
+  // there's no such outline to begin with.
+  fieldInput: { color: colors.text, fontSize: 15, padding: 0, backgroundColor: 'transparent', outlineWidth: 0 },
   passwordRow: { flexDirection: 'row', alignItems: 'center' },
   passwordCol: { flex: 1 },
   toggleVisibility: { padding: 6, marginLeft: 2 },
