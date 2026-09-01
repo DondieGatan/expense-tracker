@@ -94,7 +94,6 @@ export default function RegisterScreen({ navigation }: Props) {
             <TextInput
               ref={fullNameRef}
               style={styles.fieldInput}
-              placeholder="Jane Doe"
               placeholderTextColor={colors.textMuted}
               autoComplete="off"
               value={fullName}
@@ -113,7 +112,6 @@ export default function RegisterScreen({ navigation }: Props) {
             <TextInput
               ref={emailRef}
               style={styles.fieldInput}
-              placeholder="you@example.com"
               placeholderTextColor={colors.textMuted}
               autoCapitalize="none"
               keyboardType="email-address"
@@ -136,7 +134,6 @@ export default function RegisterScreen({ navigation }: Props) {
                 <TextInput
                   ref={passwordRef}
                   style={styles.fieldInput}
-                  placeholder="min. 6 characters"
                   placeholderTextColor={colors.textMuted}
                   secureTextEntry={!showPassword}
                   // "new-password" (not "off") — the semantically correct
