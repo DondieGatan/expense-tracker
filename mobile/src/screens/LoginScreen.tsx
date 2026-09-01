@@ -16,6 +16,16 @@ import type { AuthStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
+// Pressable defaults to tabIndex=0 on web (react-native-web), making the
+// whole field wrapper its own keyboard-focusable stop in ADDITION to the
+// actual <input> inside it — Tab would land on this empty div first,
+// showing the browser's default focus rectangle around the whole field
+// (exactly the "rectangle" this was meant to remove), then need a second
+// Tab/Enter to actually reach the input. tabIndex isn't in Pressable's own
+// RN type (it's a web-only DOM concept the type doesn't know about, even
+// though react-native-web reads it directly), hence the cast.
+const notFocusable = { tabIndex: -1 } as any;
+
 export default function LoginScreen({ navigation }: Props) {
   const { colors, isDark } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -59,7 +69,11 @@ export default function LoginScreen({ navigation }: Props) {
           {error ? <Text style={styles.error}>{error}</Text> : null}
           {retryStatus ? <Text style={styles.retryStatus}>{retryStatus}</Text> : null}
 
-          <Pressable style={styles.field} onPress={() => emailRef.current?.focus()}>
+          <Pressable
+            style={styles.field}
+            onPress={() => emailRef.current?.focus()}
+            {...notFocusable}
+          >
             <Text style={styles.fieldLabel}>Email</Text>
             <TextInput
               ref={emailRef}
@@ -72,7 +86,11 @@ export default function LoginScreen({ navigation }: Props) {
             />
           </Pressable>
 
-          <Pressable style={styles.field} onPress={() => passwordRef.current?.focus()}>
+          <Pressable
+            style={styles.field}
+            onPress={() => passwordRef.current?.focus()}
+            {...notFocusable}
+          >
             <View style={styles.passwordRow}>
               <View style={styles.passwordCol}>
                 <Text style={styles.fieldLabel}>Password</Text>
