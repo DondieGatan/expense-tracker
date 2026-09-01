@@ -207,7 +207,14 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
   // bottom-border already shows which one you're in, so the native ring
   // is redundant and clashes with the glass look. No-op on native, where
   // there's no such outline to begin with.
-  fieldInput: { color: colors.text, fontSize: 15, padding: 0, backgroundColor: 'transparent', outlineWidth: 0 },
+  fieldInput: {
+    color: colors.text, fontSize: 15, padding: 0, backgroundColor: 'transparent',
+    // Belt-and-suspenders: outlineWidth: 0 alone left a faint ring visible
+    // in some render paths (outline-style computed as "auto", which a couple
+    // of engines don't fully collapse at width 0) — an explicitly
+    // transparent color has nothing to render regardless of width/style.
+    outlineWidth: 0, outlineColor: 'transparent',
+  },
   passwordRow: { flexDirection: 'row', alignItems: 'center' },
   passwordCol: { flex: 1 },
   toggleVisibility: { padding: 6, marginLeft: 2 },
