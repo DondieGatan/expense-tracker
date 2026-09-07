@@ -46,6 +46,12 @@ class Config:
 
     CORS_ORIGINS = _build_cors_origins()
 
+    # Used to email password-reset codes — see app/email.py. Free-tier
+    # SendGrid only needs Single Sender Verification (no domain/DNS), which
+    # is why it's the provider used across this project's siblings too.
+    SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY")
+    SENDGRID_FROM = os.environ.get("SENDGRID_FROM")
+
     # In-memory storage — fine for a single free-tier instance (WEB_CONCURRENCY=1),
     # but resets on restart and won't share state across multiple instances.
     RATELIMIT_ENABLED = True

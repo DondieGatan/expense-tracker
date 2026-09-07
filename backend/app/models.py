@@ -61,6 +61,21 @@ class TokenBlocklist(db.Model):
     created_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
 
 
+class PasswordResetCode(db.Model):
+    __tablename__ = "password_reset_codes"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    code_hash = db.Column(db.String(255), nullable=False)
+    # Naive UTC (not tz-aware) throughout — MSSQL's DATETIME drops tzinfo on
+    # round-trip, so a tz-aware "now" compared against a value read back from
+    # the DB would raise. Staying naive-but-UTC everywhere this is computed
+    # or compared avoids that mismatch.
+    expires_at = db.Column(db.DateTime, nullable=False)
+    used = db.Column(db.Boolean, nullable=False, default=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+
+
 class Budget(db.Model):
     __tablename__ = "budgets"
 

@@ -143,6 +143,84 @@ def test_update_me_requires_authentication(client):
     assert resp.status_code == 401
 
 
+def test_forgot_password_returns_debug_code_in_tests(client, register_user):
+    register_user(email="alex@example.com")
+    resp = client.post("/api/auth/forgot-password", json={"email": "alex@example.com"})
+    assert resp.status_code == 200
+    assert resp.get_json()["debugCode"]
+
+
+def test_forgot_password_does_not_reveal_unknown_email(client):
+    resp = client.post("/api/auth/forgot-password", json={"email": "nobody@example.com"})
+    assert resp.status_code == 200
+    assert "debugCode" not in resp.get_json()
+
+
+def test_reset_password_with_valid_code_succeeds(client, register_user):
+    register_user(email="alex@example.com", password="password123")
+    code = client.post(
+        "/api/auth/forgot-password", json={"email": "alex@example.com"}
+    ).get_json()["debugCode"]
+
+    resp = client.post(
+        "/api/auth/reset-password",
+        json={"email": "alex@example.com", "code": code, "newPassword": "newpassword456"},
+    )
+    assert resp.status_code == 200
+
+    old_login = client.post(
+        "/api/auth/login", json={"email": "alex@example.com", "password": "password123"}
+    )
+    assert old_login.status_code == 401
+
+    new_login = client.post(
+        "/api/auth/login", json={"email": "alex@example.com", "password": "newpassword456"}
+    )
+    assert new_login.status_code == 200
+
+
+def test_reset_password_rejects_wrong_code(client, register_user):
+    register_user(email="alex@example.com")
+    client.post("/api/auth/forgot-password", json={"email": "alex@example.com"})
+    resp = client.post(
+        "/api/auth/reset-password",
+        json={"email": "alex@example.com", "code": "000000", "newPassword": "newpassword456"},
+    )
+    assert resp.status_code == 400
+
+
+def test_reset_password_rejects_reused_code(client, register_user):
+    register_user(email="alex@example.com")
+    code = client.post(
+        "/api/auth/forgot-password", json={"email": "alex@example.com"}
+    ).get_json()["debugCode"]
+
+    first = client.post(
+        "/api/auth/reset-password",
+        json={"email": "alex@example.com", "code": code, "newPassword": "newpassword456"},
+    )
+    assert first.status_code == 200
+
+    second = client.post(
+        "/api/auth/reset-password",
+        json={"email": "alex@example.com", "code": code, "newPassword": "anotherpassword789"},
+    )
+    assert second.status_code == 400
+
+
+def test_reset_password_rejects_short_password(client, register_user):
+    register_user(email="alex@example.com")
+    code = client.post(
+        "/api/auth/forgot-password", json={"email": "alex@example.com"}
+    ).get_json()["debugCode"]
+
+    resp = client.post(
+        "/api/auth/reset-password",
+        json={"email": "alex@example.com", "code": code, "newPassword": "abc"},
+    )
+    assert resp.status_code == 400
+
+
 def test_logout_revokes_the_refresh_token_when_provided(client):
     data = client.post(
         "/api/auth/register",

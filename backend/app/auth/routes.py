@@ -1,6 +1,9 @@
+import random
 import re
+import string
+from datetime import datetime, timedelta, timezone
 
-from flask import request, jsonify
+from flask import request, jsonify, current_app
 from flask_jwt_extended import (
     create_access_token,
     create_refresh_token,
@@ -9,14 +12,25 @@ from flask_jwt_extended import (
     get_jwt_identity,
     jwt_required,
 )
+from werkzeug.security import generate_password_hash, check_password_hash
 
 from app.auth import auth_bp
 from app.extensions import db, limiter
-from app.models import User, TokenBlocklist
+from app.models import User, TokenBlocklist, PasswordResetCode
 from app.constants import CURRENCIES, CURRENCY_CODES
 from app.utils import current_user_id
+from app.email import send_email
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+RESET_CODE_TTL_MINUTES = 15
+
+
+def _utcnow():
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
+def _generate_reset_code():
+    return "".join(random.choices(string.digits, k=6))
 
 
 def _tokens_for(user):
@@ -121,3 +135,71 @@ def update_me():
 @jwt_required()
 def currencies():
     return jsonify({"currencies": CURRENCIES}), 200
+
+
+@auth_bp.route("/forgot-password", methods=["POST"])
+@limiter.limit("5 per minute")
+def forgot_password():
+    data = request.get_json(silent=True) or {}
+    email = (data.get("email") or "").strip().lower()
+    user = User.query.filter_by(email=email).first()
+
+    code = None
+    if user is not None:
+        code = _generate_reset_code()
+        db.session.add(PasswordResetCode(
+            user_id=user.id,
+            code_hash=generate_password_hash(code),
+            expires_at=_utcnow() + timedelta(minutes=RESET_CODE_TTL_MINUTES),
+        ))
+        db.session.commit()
+        send_email(
+            user.email,
+            "Reset your Expense Tracker password",
+            f"<p>Your password reset code is:</p><h2>{code}</h2>"
+            f"<p>This code expires in {RESET_CODE_TTL_MINUTES} minutes. "
+            f"If you didn't request this, you can safely ignore this email.</p>",
+        )
+
+    response = {"message": "If an account with that email exists, a reset code has been sent."}
+    # Test-only escape hatch so the reset flow can be exercised end-to-end
+    # without a real SendGrid key — never present outside TESTING.
+    if current_app.config.get("TESTING") and code:
+        response["debugCode"] = code
+    return jsonify(response), 200
+
+
+@auth_bp.route("/reset-password", methods=["POST"])
+@limiter.limit("5 per minute")
+def reset_password():
+    data = request.get_json(silent=True) or {}
+    email = (data.get("email") or "").strip().lower()
+    code = (data.get("code") or "").strip()
+    new_password = data.get("newPassword") or ""
+
+    if len(new_password) < 6:
+        return jsonify({"error": "Password must be at least 6 characters."}), 400
+
+    user = User.query.filter_by(email=email).first()
+    reset_row = None
+    if user is not None:
+        reset_row = (
+            PasswordResetCode.query
+            .filter_by(user_id=user.id, used=False)
+            .order_by(PasswordResetCode.id.desc())
+            .first()
+        )
+
+    valid = (
+        user is not None
+        and reset_row is not None
+        and reset_row.expires_at >= _utcnow()
+        and check_password_hash(reset_row.code_hash, code)
+    )
+    if not valid:
+        return jsonify({"error": "Invalid or expired reset code."}), 400
+
+    user.set_password(new_password)
+    reset_row.used = True
+    db.session.commit()
+    return jsonify({"message": "Password updated. You can now log in."}), 200

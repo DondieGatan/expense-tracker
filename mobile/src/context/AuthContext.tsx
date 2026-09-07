@@ -13,6 +13,8 @@ interface AuthContextValue {
   login: (email: string, password: string) => Promise<void>;
   register: (fullName: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  forgotPassword: (email: string) => Promise<void>;
+  resetPassword: (email: string, code: string, newPassword: string) => Promise<void>;
   updateCurrency: (currency: string) => Promise<void>;
   clearError: () => void;
 }
@@ -103,6 +105,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   }, []);
 
+  const forgotPassword = useCallback(async (email: string) => {
+    setError(null);
+    try {
+      await api.post('/auth/forgot-password', { email });
+    } catch (e: any) {
+      setError(e.message || 'Something went wrong.');
+      throw e;
+    }
+  }, []);
+
+  const resetPassword = useCallback(async (email: string, code: string, newPassword: string) => {
+    setError(null);
+    try {
+      await api.post('/auth/reset-password', { email, code, newPassword });
+    } catch (e: any) {
+      setError(e.message || 'Something went wrong.');
+      throw e;
+    }
+  }, []);
+
   const updateCurrency = useCallback(async (currency: string) => {
     const data = await api.put('/auth/me', { currency });
     applyUser(setUser, data.user);
@@ -112,7 +134,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, error, retryStatus, login, register, logout, updateCurrency, clearError }}
+      value={{
+        user, loading, error, retryStatus, login, register, logout,
+        forgotPassword, resetPassword, updateCurrency, clearError,
+      }}
     >
       {children}
     </AuthContext.Provider>
