@@ -3,6 +3,20 @@ from datetime import timedelta
 
 
 def _build_db_uri():
+    # DATABASE_URL takes priority — used for the Postgres (Neon) production
+    # DB after the Azure SQL server it originally ran on was decommissioned.
+    # Local dev is untouched and keeps using the MSSQL branch below.
+    database_url = os.environ.get("DATABASE_URL")
+    if database_url:
+        # Normalize to the psycopg3 driver regardless of which scheme the
+        # host hands us (Neon gives "postgresql://", some hosts give the
+        # legacy Heroku-style "postgres://").
+        if database_url.startswith("postgres://"):
+            database_url = database_url.replace("postgres://", "postgresql://", 1)
+        if database_url.startswith("postgresql://"):
+            database_url = database_url.replace("postgresql://", "postgresql+psycopg://", 1)
+        return database_url
+
     server = os.environ.get("SQL_SERVER", r"localhost\SQLEXPRESS")
     database = os.environ.get("SQL_DATABASE", "ExpenseTrackerDb")
     driver = os.environ.get("SQL_DRIVER", "ODBC Driver 17 for SQL Server").replace(" ", "+")
