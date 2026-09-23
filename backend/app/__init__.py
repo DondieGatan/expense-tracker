@@ -14,6 +14,19 @@ def create_app(config_class=Config):
     cors.init_app(app, resources={r"/api/*": {"origins": app.config["CORS_ORIGINS"]}})
     limiter.init_app(app)
 
+    # Render's free tier doesn't support a Pre-Deploy Command (paid-tier
+    # only), and running "flask db upgrade" as a separate step before
+    # gunicorn in the boot command meant every cold start paid for a whole
+    # second Python/Flask/DB-connect cycle just to check the migration
+    # version. Running it here instead means it's part of the one process
+    # gunicorn was already starting, not a duplicate one. Skipped under
+    # TESTING — the test suite builds its schema with db.create_all()
+    # against an in-memory SQLite DB, not Alembic migrations.
+    if not app.config.get("TESTING"):
+        with app.app_context():
+            from flask_migrate import upgrade
+            upgrade()
+
     from app.auth import auth_bp
     from app.expenses import expenses_bp
     from app.budget import budget_bp

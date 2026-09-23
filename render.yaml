@@ -5,12 +5,6 @@ services:
     rootDir: backend
     dockerfilePath: ./Dockerfile
     plan: free
-    # Migrations only need to run once per deploy, not on every container
-    # boot — the boot command used to run "flask db upgrade" itself, which
-    # meant every cold start after a free-tier idle spin-down paid for a
-    # second full Python/Flask/DB-connect cycle (on top of gunicorn's own)
-    # before the server could accept a single request, including login.
-    preDeployCommand: flask db upgrade
     envVars:
       - key: SECRET_KEY
         generateValue: true
