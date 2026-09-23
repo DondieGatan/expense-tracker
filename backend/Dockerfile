@@ -15,6 +15,10 @@ COPY . .
 
 ENV FLASK_APP="run.py"
 
-# flask db upgrade runs first so a new migration reaches the database before
-# gunicorn starts serving requests against it.
-CMD flask db upgrade && gunicorn "app:create_app()" --bind 0.0.0.0:$PORT
+# Migrations run via Render's preDeployCommand (see render.yaml), once per
+# deploy — not here. Running "flask db upgrade" on every container boot
+# meant every free-tier cold start (after an idle spin-down) paid for a
+# second full Python/Flask/DB-connect cycle before gunicorn could even
+# start accepting requests, which is most of why logins felt slow for
+# anyone hitting a sleeping instance.
+CMD gunicorn "app:create_app()" --bind 0.0.0.0:$PORT
