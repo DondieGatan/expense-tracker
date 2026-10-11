@@ -2,21 +2,28 @@
 
 [![CI](https://github.com/DondieGatan/expense-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/DondieGatan/expense-tracker/actions/workflows/ci.yml)
 
-A personal expense tracker: a **Flask** REST API backend (Python, SQLAlchemy,
-SQL Server) with a **React Native** (Expo) mobile app frontend, with budget
-tracking, dashboard charts, and CSV export on top of full CRUD.
+A personal expense tracker: a **Flask** REST API (Python, SQLAlchemy, Postgres) with a **React Native**
+(Expo, TypeScript) client that runs as an installable Android APK and as a web app, with budget tracking,
+dashboard charts, per-user currencies and CSV export on top of full CRUD.
+
+[![Expense Tracker](https://dondiegatan.github.io/dondiegatan-portfolio/assets/covers/expense-tracker.webp)](https://dondiegatan.github.io/dondiegatan-portfolio/projects.html#expense-tracker)
 
 | Login | Dashboard |
 |---|---|
 | ![Login screen](docs/screenshots/login.png) | ![Dashboard screen](docs/screenshots/dashboard.png) |
 
-**Live web app:** https://expense-tracker-web-rosy.vercel.app
-(backend: https://expense-tracker-api-hlyz.onrender.com — free-tier hosting,
-so the first request after ~15 min idle can take 30-50s to wake up while the
-instance and its Azure SQL database spin back up; the app retries with a
-"waking up the server" message rather than failing outright, and a logged-out
-visitor reaches the login screen immediately regardless, since that path
-doesn't depend on the backend being awake)
+**Live web app:** https://expense-tracker-web-rosy.vercel.app ·
+[Demo video on my portfolio](https://dondiegatan.github.io/dondiegatan-portfolio/projects.html#expense-tracker) · built by
+[Dondie Godwin Gatan](https://dondiegatan.github.io/dondiegatan-portfolio/)
+
+**Try it in a minute:** open the live app, tap *Sign up*, and create a free account (no email confirmation, you are
+signed straight in). Then use the green **+** button to add an expense: the quick-add chips (Coffee, Lunch, Fuel...)
+fill in the category for you. Watch the dashboard and charts update, then set a monthly budget.
+
+The backend ([expense-tracker-api-hlyz.onrender.com](https://expense-tracker-api-hlyz.onrender.com)) is on Render's
+free tier, so the first request after about 15 minutes idle can take 30-50 seconds to wake up. The app retries with
+a "waking up the server" message instead of failing, and a logged-out visitor reaches the login screen immediately
+because that path does not depend on the backend being awake.
 
 ## Architecture
 
@@ -30,22 +37,21 @@ flowchart LR
         Routes[Blueprints<br/>auth / expenses / budget / dashboard] --> ORM[SQLAlchemy]
     end
 
-    DB[(Azure SQL Database<br/>free tier, serverless)]
+    DB[(Postgres<br/>Neon, free tier)]
 
     Client -- "HTTPS + JWT" --> Routes
-    ORM -- "pyodbc / ODBC Driver 18" --> DB
+    ORM -- "psycopg" --> DB
 ```
 
-The API and database deliberately live on different cloud providers (Render for
-compute, Azure for SQL Server). That surfaced a real bug worth noting: the first
-Azure SQL Database was provisioned in the region closest to where the app was
-being built (UAE), not where Render actually runs its servers (Oregon, US) — every
-connection attempt from the backend to the database hit a login timeout, while
-connecting from a local machine worked fine. It looked like a firewall problem at
-first (and a genuine firewall gap was fixed along the way), but a temporary
-raw-TCP-connect diagnostic route on the backend proved the network path was fine
-in under 20ms — the real fix was moving the database to `westus2`, next to
-Render's servers.
+The database started on Azure SQL and later moved to Neon Postgres (the Azure SQL server was decommissioned);
+the API on Render, the web client on Vercel and the database on Neon are three separate providers.
+
+**A lesson from the Azure SQL days:** the first Azure SQL Database was provisioned in the region closest to where the
+app was being built (UAE), not where Render actually runs its servers (Oregon, US). Every connection attempt from the
+backend hit a login timeout, while connecting from a local machine worked fine. It looked like a firewall problem
+at first (and a genuine firewall gap was fixed along the way), but a temporary raw-TCP-connect diagnostic route on the
+backend proved the network path was fine in under 20 ms. The real fix was moving the database next to Render's
+servers. Region choice matters when compute and data live on different providers.
 
 ## Features
 
@@ -64,6 +70,15 @@ Render's servers.
   category-breakdown donut chart, and a 6-month spending trend chart
 - **CSV export** of the expense list, respecting whatever filters are
   currently applied
+- **Per-user currency** — 12 ISO 4217 codes, stored server-side and used for every amount shown across the app
+- **Quick-add templates** — one tap fills in a common expense (Coffee, Lunch, Groceries, Fuel, Taxi) with the right
+  category
+- **Forgot-password flow** — a SendGrid-emailed one-time code, hashed and single-use on the server, with no account
+  enumeration
+- **Light/dark theme** with a persisted preference, animated charts, swipe-to-delete on native (a dedicated delete
+  action on web), pull-to-refresh and haptic feedback
+- **Three ways to run it** from one codebase: a real Android APK built with EAS, the Expo web build on Vercel, and
+  Expo Go for development
 
 ## Project layout
 
@@ -78,7 +93,7 @@ A `User` (`id`, `fullName`, `email`, `passwordHash`), an `Expense`
 (`id`, `userId`, `description`, `amount`, `category`, `date`,
 `paymentMethod`, `notes`), and a per-user `Budget` (`id`, `userId`,
 `monthlyLimit`) — managed through Flask-Migrate/Alembic migrations against
-SQL Server.
+Postgres (migrations run automatically on startup, see `app/__init__.py`).
 
 ## API reference
 
@@ -103,10 +118,14 @@ All endpoints are prefixed with `/api` and (except `/health`, `/auth/register`,
 
 ## Run the backend
 
-Requires Python 3 and a reachable SQL Server instance (defaults to
-`localhost\SQLEXPRESS` with Windows/trusted authentication — override via
-`SQL_SERVER`/`SQL_DATABASE`/`SQL_DRIVER`/`SQL_USERNAME`/`SQL_PASSWORD`
-environment variables).
+Requires Python 3 and a database. Set `DATABASE_URL` to any Postgres connection string (a free
+[Neon](https://neon.tech) project works well). If `DATABASE_URL` is not set, the backend falls back to a local SQL
+Server instance (`localhost\SQLEXPRESS` with Windows authentication, overridable through the `SQL_SERVER` /
+`SQL_DATABASE` / `SQL_DRIVER` / `SQL_USERNAME` / `SQL_PASSWORD` variables), which needs the ODBC driver installed.
+
+Other environment variables: `SECRET_KEY` and `JWT_SECRET_KEY` (always set real values in production),
+`CORS_ORIGINS` (comma-separated allowlist for browser clients), and optionally `SENDGRID_API_KEY` / `SENDGRID_FROM`
+for password-reset email.
 
 ```bash
 cd backend
@@ -133,20 +152,17 @@ deployed backend instead — see `mobile/src/api/client.ts`.
 
 ## Deployment
 
-- **Backend**: Docker image on Render (`backend/Dockerfile`), not the native
-  Python runtime — Render's native runtime has no `apt` access, and pyodbc
-  needs the Microsoft ODBC driver installed at the OS level. The image is
-  pinned to `python:3.12-slim-bookworm`; the plain `slim` tag now tracks
-  Debian 13 (trixie), which dropped `apt-key`, so the driver is installed via
-  Microsoft's `packages-microsoft-prod.deb` instead.
-- **Database**: Azure SQL Database, serverless compute with auto-pause, on
-  the free tier (100,000 vCore-seconds + 32GB/month, not billed unless that's
-  exceeded). Provisioned in `westus2` — see [Architecture](#architecture) for
-  why region choice mattered here.
-- **Mobile**: standalone Android APK via `eas build --platform android
-  --profile preview`, distributed directly rather than through the Play
-  Store. `mobile/eas.json` defines the build profile and bakes in the
-  production `EXPO_PUBLIC_API_URL` at build time.
+- **Backend**: Docker image on Render (`backend/Dockerfile`, `python:3.12-slim-bookworm`), served by gunicorn.
+  Render's native Python runtime has no `apt` access, so the image is still built through Docker even though
+  production no longer needs the ODBC driver stack that used to live there (`psycopg[binary]` bundles its own
+  `libpq`). Migrations run inside `create_app()` itself rather than as a separate step, because Render's free tier
+  has no pre-deploy command and a second cold-start cycle would slow every wake-up.
+- **Database**: Neon Postgres (free tier).
+- **Web**: the Expo web build is deployed on Vercel and talks to the same Flask API through a locked-down CORS
+  allowlist.
+- **Mobile**: standalone Android APK via `eas build --platform android --profile preview`, distributed directly
+  rather than through the Play Store. `mobile/eas.json` defines the build profile and bakes in the production
+  `EXPO_PUBLIC_API_URL` at build time.
 
 ## Tests
 
@@ -163,11 +179,10 @@ Actions, alongside a TypeScript check for the mobile app.
 
 ## Stack
 
-**Backend**: Python · Flask · SQLAlchemy · Flask-Migrate · Flask-JWT-Extended
-· SQL Server (`pyodbc`) · pytest · gunicorn · Docker
+**Backend**: Python · Flask · SQLAlchemy · Flask-Migrate · Flask-JWT-Extended · Flask-Limiter · Postgres (`psycopg`)
+· SendGrid · pytest · gunicorn · Docker
 
-**Mobile**: React Native · Expo · TypeScript · React Navigation ·
-react-native-chart-kit · react-native-reanimated
+**Mobile / web**: React Native · Expo · TypeScript · React Navigation · react-native-chart-kit ·
+react-native-reanimated
 
-**Infra**: Render (backend hosting) · Azure SQL Database · EAS Build
-(Android APK) · GitHub Actions (CI)
+**Infra**: Render (API) · Vercel (web build) · Neon (Postgres) · EAS Build (Android APK) · GitHub Actions (CI)
