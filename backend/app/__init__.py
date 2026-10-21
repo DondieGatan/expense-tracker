@@ -1,3 +1,5 @@
+import os
+
 from flask import Flask, jsonify
 
 from config import Config
@@ -22,7 +24,9 @@ def create_app(config_class=Config):
     # gunicorn was already starting, not a duplicate one. Skipped under
     # TESTING — the test suite builds its schema with db.create_all()
     # against an in-memory SQLite DB, not Alembic migrations.
-    if not app.config.get("TESTING"):
+    # RUN_MIGRATIONS=0 skips this (used on Vercel, where every cold start would
+    # otherwise re-run the Alembic check; the schema is already migrated).
+    if not app.config.get("TESTING") and os.environ.get("RUN_MIGRATIONS", "1") != "0":
         with app.app_context():
             from flask_migrate import upgrade
             upgrade()
