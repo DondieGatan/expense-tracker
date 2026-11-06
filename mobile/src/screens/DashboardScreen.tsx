@@ -18,6 +18,7 @@ import AnimatedPressable from '../components/AnimatedPressable';
 import DonutChart from '../components/DonutChart';
 import TrendBars from '../components/TrendBars';
 import AiBadge from '../components/AiBadge';
+import GlowBlob from '../components/GlowBlob';
 import DisplayText from '../components/DisplayText';
 import { SunIcon, MoonIcon, EmptyBoxIcon, PlusIcon, SparklesIcon, ArrowRightIcon } from '../components/icons';
 import type { DashboardData, Insights } from '../api/types';
@@ -120,8 +121,8 @@ export default function DashboardScreen() {
             end={{ x: 1, y: 1 }}
             style={styles.hero}
           >
-            <View style={styles.heroCircleA} />
-            <View style={styles.heroCircleB} />
+            <GlowBlob size={300} color="#d6fb00" style={styles.heroGlowA} />
+            <GlowBlob size={220} color="#18a3b3" style={styles.heroGlowB} />
             <Text style={styles.heroLabel}>SPENT THIS MONTH</Text>
             <DisplayText style={styles.heroValue}>{formatCurrency(animatedThisMonth)}</DisplayText>
 
@@ -257,12 +258,12 @@ const makeStyles = (colors: Colors, topInset: number) => StyleSheet.create({
     boxShadow: `0px 12px 24px ${withAlpha(colors.heroFrom, 0.35)}`, elevation: 8,
   },
   hero: { borderRadius: 26, padding: 22, overflow: 'hidden' },
-  heroCircleA: { position: 'absolute', width: 190, height: 190, borderRadius: 95, right: -60, top: -80, backgroundColor: 'rgba(255,255,255,0.10)' },
-  heroCircleB: { position: 'absolute', width: 120, height: 120, borderRadius: 60, right: 40, bottom: -70, backgroundColor: 'rgba(255,255,255,0.07)' },
+  heroGlowA: { position: 'absolute', right: -110, top: -140, opacity: 0.75 },
+  heroGlowB: { position: 'absolute', left: -90, bottom: -130, opacity: 0.7 },
   heroLabel: { color: 'rgba(255,255,255,0.80)', fontSize: 11, fontWeight: '800', letterSpacing: 1.2 },
   heroValue: { color: '#ffffff', fontSize: 38, fontWeight: '800', marginTop: 6, marginBottom: 18 },
   heroTrack: { height: 8, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.22)', overflow: 'hidden' },
-  heroFill: { height: '100%', borderRadius: 999, backgroundColor: '#ffffff' },
+  heroFill: { height: '100%', borderRadius: 999, backgroundColor: '#d6fb00' },
   heroFillOver: { backgroundColor: '#ff8a8a' },
   heroMetaRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 },
   heroMeta: { color: 'rgba(255,255,255,0.88)', fontSize: 12 },

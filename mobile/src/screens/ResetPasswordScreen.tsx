@@ -200,7 +200,7 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
   cardContent: { padding: 26 },
   header: { marginBottom: 20, gap: 6, alignItems: 'center' },
   logoIcon: {
-    width: 42, height: 42, borderRadius: 13, backgroundColor: '#000000',
+    width: 42, height: 42, borderRadius: 13, backgroundColor: '#00242a',
     alignItems: 'center', justifyContent: 'center', marginBottom: 8,
   },
   logoImage: { width: 26, height: 26 },
