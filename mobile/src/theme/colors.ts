@@ -1,75 +1,69 @@
-// "Chalk, slate, midnight, royal, flare": a Swiss-style navy palette. Midnight and royal blue carry the surfaces and the
-// hero card, chalk and slate carry text, and flare red is kept for one loud accent (the add button). Palette: chalk
-// #FFFFFF / #E6EBF1, slate #A2B5CB / #6C829D, midnight #000B58 / #1A2258, royal #00139E / #1D2FB5, flare #FF1414 /
-// #FF6262. Every colour used by a screen comes from here, so the whole app re-skins from this one file.
+// "Black, vibe purple, white": true-black surfaces, one electric purple (#AC58E9) for everything interactive, and
+// white text. The purple is used as-is on dark; on white it is deepened a step (#8F3FD1) so text and icons keep
+// contrast. Every colour used by a screen comes from here, so the whole app re-skins from this one file.
 export const darkColors = {
-  bg: '#00082e',
-  surface: '#0a1250',
-  surface2: '#141e6c',
-  border: 'rgba(230,235,241,0.11)',
+  bg: '#000000',
+  surface: '#0e0b13',
+  surface2: '#1a1424',
+  border: 'rgba(255,255,255,0.10)',
   // Barely-there frosted fill for the glass-pill input fields: a solid `surface` reads as an opaque box; this stays
   // translucent so the auth background shows through faintly, matching the glass-card look.
-  fieldFill: 'rgba(230,235,241,0.06)',
-  text: '#f3f6fa',
-  textMuted: '#9fb0cc',
-  accent: '#ffffff',
-  accentStrong: '#dfe6f1',
-  accentContrast: '#000b58',
-  accent2: '#8aa2ff',
-  // The one loud colour: the add button and its glow.
-  flare: '#ff1414',
-  flareStrong: '#d90f0f',
-  danger: '#ff6b6b',
-  dangerSoft: 'rgba(255,107,107,0.16)',
-  warn: '#ffc15c',
-  success: '#52deb0',
-  // The AI surfaces (coach, magic add, ask) share one soft periwinkle-to-royal wash.
-  aiFrom: 'rgba(138,162,255,0.18)',
-  aiTo: 'rgba(29,47,181,0.34)',
-  heroFrom: '#2539cc',
-  heroTo: '#00139e',
-  tabBar: 'rgba(7,15,72,0.95)',
+  fieldFill: 'rgba(255,255,255,0.05)',
+  text: '#ffffff',
+  textMuted: '#a9a1b8',
+  accent: '#ac58e9',
+  accentStrong: '#8f3fd1',
+  accentContrast: '#0a0210',
+  accent2: '#d6b0f7',
+  danger: '#ff6b86',
+  dangerSoft: 'rgba(255,107,134,0.16)',
+  warn: '#ffb84d',
+  success: '#45dc9c',
+  // The AI surfaces (coach, magic add, ask) share one soft purple wash.
+  aiFrom: 'rgba(172,88,233,0.24)',
+  aiTo: 'rgba(172,88,233,0.06)',
+  heroFrom: '#9a40dc',
+  heroTo: '#5a14a0',
+  tabBar: 'rgba(14,11,19,0.96)',
 };
 
 export const lightColors = {
-  bg: '#eef2f7',
+  bg: '#f6f3fa',
   surface: '#ffffff',
-  surface2: '#e6ebf1',
-  border: 'rgba(0,11,88,0.10)',
-  fieldFill: 'rgba(0,11,88,0.04)',
-  text: '#000b58',
-  textMuted: '#52678b',
-  accent: '#00139e',
-  accentStrong: '#000b58',
+  surface2: '#eee6f7',
+  border: 'rgba(10,2,16,0.09)',
+  fieldFill: 'rgba(10,2,16,0.035)',
+  text: '#0b0610',
+  textMuted: '#675e76',
+  accent: '#8f3fd1',
+  accentStrong: '#7326b5',
   accentContrast: '#ffffff',
-  accent2: '#1d2fb5',
-  flare: '#ff1414',
-  flareStrong: '#d90f0f',
-  danger: '#e01212',
-  dangerSoft: 'rgba(224,18,18,0.11)',
+  accent2: '#ac58e9',
+  danger: '#d6264a',
+  dangerSoft: 'rgba(214,38,74,0.11)',
   warn: '#a85d00',
   success: '#0b7f58',
-  aiFrom: 'rgba(0,19,158,0.10)',
-  aiTo: 'rgba(162,181,203,0.38)',
-  heroFrom: '#1428b8',
-  heroTo: '#000b58',
-  tabBar: 'rgba(255,255,255,0.96)',
+  aiFrom: 'rgba(143,63,209,0.13)',
+  aiTo: 'rgba(172,88,233,0.04)',
+  heroFrom: '#9a40dc',
+  heroTo: '#5a14a0',
+  tabBar: 'rgba(255,255,255,0.97)',
 };
 
 export type Colors = typeof darkColors;
 
 // One fixed colour per category, so a category looks the same on the donut chart, the history list and the filters.
-// Deliberately theme-invariant: clear mid-tones that sit well on both the navy and the chalk backgrounds.
+// Deliberately theme-invariant: clear mid-tones that sit well on both the black and the white backgrounds.
 export const CATEGORY_COLORS: Record<string, string> = {
-  Food: '#ff7a59',
-  Transport: '#6f8bff',
-  Housing: '#a2b5cb',
-  Utilities: '#ffc857',
-  Entertainment: '#c58bff',
-  Health: '#4fdcae',
-  Education: '#4cc3ff',
-  Shopping: '#ff5c8a',
-  General: '#8394b3',
+  Food: '#ff8a4c',
+  Transport: '#4cb8ff',
+  Housing: '#b673f0',
+  Utilities: '#ffd24c',
+  Entertainment: '#ff5fa2',
+  Health: '#3ddc97',
+  Education: '#7c8cff',
+  Shopping: '#ff5c5c',
+  General: '#9a93a8',
 };
 
 export function categoryColor(category: string): string {

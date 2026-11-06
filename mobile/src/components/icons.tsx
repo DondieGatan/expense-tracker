@@ -6,7 +6,7 @@ interface IconProps {
   color?: string;
 }
 
-const base = (size = 20, color = '#f3f6fa') => ({
+const base = (size = 20, color = '#ffffff') => ({
   width: size,
   height: size,
   viewBox: '0 0 24 24',
