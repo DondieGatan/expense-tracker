@@ -23,6 +23,7 @@ import { SearchIcon, CategoryIcon, DownloadIcon, EmptyBoxIcon, PlusIcon } from '
 import { formatCurrency, formatDate, todayIso } from '../utils/format';
 import { categoryColor } from '../theme/colors';
 import type { Expense } from '../api/types';
+import DisplayText from '../components/DisplayText';
 
 type ListRow =
   | { type: 'header'; key: string; date: string; total: number }
@@ -157,7 +158,7 @@ export default function ExpensesScreen() {
       <AuroraBackground />
       <View style={styles.header}>
         <View>
-          <Text style={styles.pageTitle}>History</Text>
+          <DisplayText style={styles.pageTitle}>History</DisplayText>
           <Text style={styles.pageSubtitle}>{expenses.length} expense{expenses.length === 1 ? '' : 's'}{hasFilters ? ' match' : ''}</Text>
         </View>
         <AnimatedPressable style={styles.exportBtn} onPress={onExport} disabled={exporting}>

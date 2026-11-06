@@ -62,7 +62,7 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
       {state.routes.slice(0, 2).map(renderTab)}
 
       <View style={styles.fabWrap}>
-        <PulseGlow color={colors.accent} size={68} style={styles.fabGlow} />
+        <PulseGlow color={colors.heroFrom} size={68} style={styles.fabGlow} />
         <AnimatedPressable scaleTo={0.88} onPress={() => parent?.navigate('ExpenseForm')} accessibilityLabel="Add expense">
           <LinearGradient colors={[colors.accent, colors.accentStrong]} style={styles.fab}>
             <PlusIcon size={24} color={colors.accentContrast} />
