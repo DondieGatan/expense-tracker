@@ -4,7 +4,7 @@ import { Platform } from 'react-native';
 const LINK_ID = 'auth-web-font';
 const STYLE_ID = 'app-web-font-style';
 
-// Loads Manrope (body) and Inter Tight (display: titles and big amounts) from Google Fonts on web only — native (iOS/Android) keeps
+// Loads Manrope (body) and Montserrat (display: titles and big amounts) from Google Fonts on web only — native (iOS/Android) keeps
 // the system font entirely untouched, so this can't affect the EAS/Android
 // build. It also sets Manrope as the font for every text element on web (react-native-web renders Text as
 // <div dir="auto">), so the whole app has one typeface instead of just the screens that opted in.
@@ -16,7 +16,7 @@ export function useWebFont() {
       link.id = LINK_ID;
       link.rel = 'stylesheet';
       link.href =
-        'https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter+Tight:wght@600;700;800&display=swap';
+        'https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Montserrat:wght@600;700;800&display=swap';
       document.head.appendChild(link);
     }
     if (!document.getElementById(STYLE_ID)) {
@@ -24,7 +24,7 @@ export function useWebFont() {
       style.id = STYLE_ID;
       style.textContent =
         "div[dir='auto']:not([data-display]), input, textarea, button { font-family: 'Manrope', system-ui, sans-serif !important; } " +
-        "[data-display] { font-family: 'Inter Tight', 'Manrope', system-ui, sans-serif !important; letter-spacing: -0.025em; }";
+        "[data-display] { font-family: 'Montserrat', 'Manrope', system-ui, sans-serif !important; letter-spacing: -0.02em; }";
       document.head.appendChild(style);
     }
   }, []);

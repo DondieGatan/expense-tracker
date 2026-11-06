@@ -1,7 +1,7 @@
 import React from 'react';
 import { Platform, Text, TextProps } from 'react-native';
 
-// Display type for page titles and big amounts: tightly tracked, heavy grotesque. On web it picks up Inter Tight (see
+// Display type for page titles and big amounts: heavy geometric sans. On web it picks up Montserrat (see
 // useWebFont); on native it keeps the platform font with tighter tracking, so no font files are bundled and the EAS
 // build is untouched.
 export default function DisplayText({ style, ...rest }: TextProps) {
