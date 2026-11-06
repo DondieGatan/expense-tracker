@@ -22,3 +22,7 @@ services:
         value: "no"
       - key: SQL_DRIVER
         value: "ODBC Driver 18 for SQL Server"
+      # Optional: powers the written parts of the AI features (magic add, coach wording, ask). Without it every AI
+      # feature still works through its rule-based path.
+      - key: GEMINI_API_KEY
+        sync: false

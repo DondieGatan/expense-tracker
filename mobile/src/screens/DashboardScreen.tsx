@@ -1,42 +1,37 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import { PieChart, BarChart } from 'react-native-chart-kit';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown, FadeInUp, FadeInRight } from 'react-native-reanimated';
 import { useTheme } from '../context/ThemeContext';
-import { Colors } from '../theme/colors';
-import { categoryChartColors } from '../theme/colors';
+import { useAuth } from '../context/AuthContext';
+import { Colors, categoryColor, withAlpha } from '../theme/colors';
 import { api } from '../api/client';
-import { formatCurrency } from '../utils/format';
+import { getInsights } from '../api/insights';
+import { formatCurrency, formatCurrencyCompact, greeting } from '../utils/format';
 import { useCountUp } from '../utils/useCountUp';
 import TxnRow from '../components/TxnRow';
 import Skeleton from '../components/Skeleton';
-import PulseGlow from '../components/PulseGlow';
+import AuroraBackground from '../components/AuroraBackground';
 import AnimatedPressable from '../components/AnimatedPressable';
-import {
-  ArrowUpIcon, ArrowDownIcon, BudgetIcon, SunIcon, MoonIcon, EmptyBoxIcon, PlusIcon,
-} from '../components/icons';
-import type { DashboardData } from '../api/types';
+import DonutChart from '../components/DonutChart';
+import TrendBars from '../components/TrendBars';
+import AiBadge from '../components/AiBadge';
+import { SunIcon, MoonIcon, EmptyBoxIcon, PlusIcon, SparklesIcon, ArrowRightIcon } from '../components/icons';
+import type { DashboardData, Insights } from '../api/types';
+
+const MAX_SLICES = 5;
 
 export default function DashboardScreen() {
   const { colors, isDark, toggleTheme } = useTheme();
+  const { user } = useAuth();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(colors, insets.top), [colors, insets.top]);
-  const chartConfig = useMemo(() => ({
-    backgroundGradientFrom: colors.surface,
-    backgroundGradientTo: colors.surface,
-    color: (opacity = 1) => hexToRgba(colors.accent, opacity),
-    labelColor: () => colors.textMuted,
-    decimalPlaces: 0,
-    barPercentage: 0.6,
-  }), [colors]);
 
   const navigation = useNavigation<any>();
-  const { width: windowWidth } = useWindowDimensions();
-  const chartWidth = Math.max(windowWidth - 64, 240);
   const [data, setData] = useState<DashboardData | null>(null);
+  const [insights, setInsights] = useState<Insights | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -48,6 +43,8 @@ export default function DashboardScreen() {
       setLoading(false);
       setRefreshing(false);
     }
+    // The coach card is a bonus: it loads after the numbers and a failure just hides it.
+    getInsights().then(setInsights).catch(() => setInsights(null));
   }, []);
 
   useFocusEffect(
@@ -62,15 +59,17 @@ export default function DashboardScreen() {
   };
 
   const animatedThisMonth = useCountUp(data?.thisMonthTotal ?? 0);
+  const firstName = user?.fullName?.split(' ')[0] ?? '';
 
   const header = (
     <View style={styles.headerRow}>
-      <Animated.Text entering={FadeInDown.duration(400)} style={styles.pageTitle}>Dashboard</Animated.Text>
-      <AnimatedPressable
-        style={styles.themeToggle}
-        hitSlop={16}
-        onPress={toggleTheme}
-      >
+      <View style={{ flex: 1 }}>
+        <Animated.Text entering={FadeInDown.duration(400)} style={styles.greeting}>{greeting()}{firstName ? ',' : ''}</Animated.Text>
+        <Animated.Text entering={FadeInDown.duration(400).delay(40)} style={styles.pageTitle} numberOfLines={1}>
+          {firstName || 'Dashboard'}
+        </Animated.Text>
+      </View>
+      <AnimatedPressable style={styles.themeToggle} hitSlop={16} onPress={toggleTheme} accessibilityLabel="Toggle light or dark theme">
         {isDark ? <SunIcon size={17} color={colors.text} /> : <MoonIcon size={17} color={colors.text} />}
       </AnimatedPressable>
     </View>
@@ -78,219 +77,226 @@ export default function DashboardScreen() {
 
   if (loading || !data) {
     return (
-      <ScrollView style={styles.flex} contentContainerStyle={styles.container}>
-        {header}
-        <Skeleton height={190} borderRadius={22} style={{ marginBottom: 16 }} />
-        <View style={styles.statGrid}>
-          <Skeleton height={70} borderRadius={16} style={{ flex: 1 }} />
-          <Skeleton height={70} borderRadius={16} style={{ flex: 1 }} />
-        </View>
-        <Skeleton height={160} borderRadius={18} style={{ marginBottom: 16 }} />
-        <Skeleton height={220} borderRadius={18} />
-      </ScrollView>
+      <View style={styles.flex}>
+        <AuroraBackground />
+        <ScrollView style={styles.flex} contentContainerStyle={styles.container}>
+          {header}
+          <Skeleton height={180} borderRadius={26} style={{ marginBottom: 16 }} />
+          <Skeleton height={84} borderRadius={20} style={{ marginBottom: 16 }} />
+          <Skeleton height={230} borderRadius={22} style={{ marginBottom: 16 }} />
+          <Skeleton height={190} borderRadius={22} />
+        </ScrollView>
+      </View>
     );
   }
 
   const overBudget = data.budgetLimit != null && data.thisMonthTotal > data.budgetLimit;
   const remaining = data.budgetLimit != null ? data.budgetLimit - data.thisMonthTotal : null;
+  const usedPercent = data.budgetLimit ? Math.min(100, (data.thisMonthTotal / data.budgetLimit) * 100) : 0;
 
-  const pieData = data.byCategory.map((c, i) => ({
-    name: c.category,
-    population: c.total,
-    color: categoryChartColors[i % categoryChartColors.length],
-    legendFontColor: colors.textMuted,
-    legendFontSize: 11,
-  }));
-
-  const barData = {
-    labels: data.monthlyTrend.map((m) => m.label),
-    datasets: [{ data: data.monthlyTrend.map((m) => m.total) }],
-  };
+  const top = data.byCategory.slice(0, MAX_SLICES);
+  const otherTotal = data.byCategory.slice(MAX_SLICES).reduce((sum, c) => sum + c.total, 0);
+  const slices = [
+    ...top.map((c) => ({ label: c.category, value: c.total, color: categoryColor(c.category) })),
+    ...(otherTotal > 0 ? [{ label: 'Other', value: otherTotal, color: colors.textMuted }] : []),
+  ];
+  const sliceTotal = slices.reduce((sum, s) => sum + s.value, 0);
 
   return (
-    <ScrollView
-      style={styles.flex}
-      contentContainerStyle={styles.container}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
-    >
-      {header}
+    <View style={styles.flex}>
+      <AuroraBackground />
+      <ScrollView
+        style={styles.flex}
+        contentContainerStyle={styles.container}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
+      >
+        {header}
 
-      <Animated.View entering={FadeInDown.duration(500).delay(60)} style={styles.balanceCardWrap}>
-        <PulseGlow color={colors.accent} size={140} style={styles.balanceGlow} />
-        <LinearGradient
-          colors={[colors.accent, colors.accentStrong]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.balanceCard}
-        >
-          <Text style={styles.balanceLabel}>THIS MONTH</Text>
-          <Text style={styles.balanceValue}>{formatCurrency(animatedThisMonth)}</Text>
+        <Animated.View entering={FadeInDown.duration(500).delay(60)} style={styles.heroWrap}>
+          <LinearGradient
+            colors={[colors.heroFrom, colors.heroTo]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.hero}
+          >
+            <View style={styles.heroCircleA} />
+            <View style={styles.heroCircleB} />
+            <Text style={styles.heroLabel}>SPENT THIS MONTH</Text>
+            <Text style={styles.heroValue}>{formatCurrency(animatedThisMonth)}</Text>
 
-          {data.budgetLimit != null ? (
-            <View style={styles.balanceStats}>
-              <View style={styles.balanceStat}>
-                <View style={styles.balanceStatIcon}><BudgetIcon size={14} color={colors.accentContrast} /></View>
-                <View>
-                  <Text style={styles.balanceStatLabel}>Budget</Text>
-                  <Text style={styles.balanceStatValue}>{formatCurrency(data.budgetLimit)}</Text>
+            {data.budgetLimit != null ? (
+              <View>
+                <View style={styles.heroTrack}>
+                  <View style={[styles.heroFill, { width: `${usedPercent}%` }, overBudget && styles.heroFillOver]} />
+                </View>
+                <View style={styles.heroMetaRow}>
+                  <Text style={styles.heroMeta}>
+                    {overBudget ? 'Over budget by ' : 'Left to spend '}
+                    <Text style={styles.heroMetaStrong}>{formatCurrency(Math.abs(remaining ?? 0))}</Text>
+                  </Text>
+                  <Text style={styles.heroMeta}>of {formatCurrency(data.budgetLimit)}</Text>
                 </View>
               </View>
-              <View style={[styles.balanceStat, overBudget && styles.balanceStatNegative]}>
-                <View style={[styles.balanceStatIcon, overBudget && styles.balanceStatIconNegative]}>
-                  {overBudget ? <ArrowUpIcon size={14} color={colors.accentContrast} /> : <ArrowDownIcon size={14} color={colors.accentContrast} />}
+            ) : (
+              <AnimatedPressable style={styles.heroEmpty} onPress={() => navigation.navigate('Budget')}>
+                <Text style={styles.heroMeta}>No budget set yet</Text>
+                <Text style={styles.heroLink}>Set a monthly budget →</Text>
+              </AnimatedPressable>
+            )}
+          </LinearGradient>
+        </Animated.View>
+
+        {insights && insights.hasData ? (
+          <Animated.View entering={FadeInDown.duration(500).delay(110)}>
+            <AnimatedPressable scaleTo={0.98} style={styles.coach} onPress={() => navigation.navigate('Insights')}>
+              <View style={styles.coachIcon}>
+                <SparklesIcon size={18} color={colors.accent} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <View style={styles.coachTop}>
+                  <Text style={styles.coachTitle}>Your coach</Text>
+                  <AiBadge source={insights.source} />
                 </View>
-                <View>
-                  <Text style={styles.balanceStatLabel}>{overBudget ? 'Over budget' : 'Remaining'}</Text>
-                  <Text style={styles.balanceStatValue}>{formatCurrency(Math.abs(remaining ?? 0))}</Text>
-                </View>
+                <Text style={styles.coachText} numberOfLines={3}>{insights.headline}</Text>
+              </View>
+              <ArrowRightIcon size={16} color={colors.textMuted} />
+            </AnimatedPressable>
+          </Animated.View>
+        ) : null}
+
+        <Animated.View entering={FadeInDown.duration(500).delay(150)} style={styles.statGrid}>
+          <View style={styles.statCard}>
+            <Text style={styles.statValue} numberOfLines={1}>{formatCurrencyCompact(data.totalSpent)}</Text>
+            <Text style={styles.statLabel}>Total spent</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statValue}>{data.expenseCount}</Text>
+            <Text style={styles.statLabel}>Expenses logged</Text>
+          </View>
+        </Animated.View>
+
+        <Animated.View entering={FadeInUp.duration(500).delay(190)} style={styles.panel}>
+          <Text style={styles.panelTitle}>Where it goes</Text>
+          {slices.length ? (
+            <View style={styles.donutRow}>
+              <DonutChart
+                slices={slices}
+                size={150}
+                thickness={20}
+                centerValue={formatCurrencyCompact(sliceTotal)}
+                centerLabel="all time"
+              />
+              <View style={styles.legend}>
+                {slices.map((s) => (
+                  <View key={s.label} style={styles.legendRow}>
+                    <View style={[styles.legendDot, { backgroundColor: s.color }]} />
+                    <Text style={styles.legendName} numberOfLines={1}>{s.label}</Text>
+                    <Text style={styles.legendPct}>{Math.round((s.value / sliceTotal) * 100)}%</Text>
+                  </View>
+                ))}
               </View>
             </View>
           ) : (
-            <AnimatedPressable style={styles.balanceEmpty} onPress={() => navigation.navigate('Budget')}>
-              <Text style={styles.balanceEmptyText}>No budget set yet</Text>
-              <Text style={styles.balanceEmptyLink}>Set a monthly budget →</Text>
-            </AnimatedPressable>
+            <Text style={styles.emptyText}>No data yet.</Text>
           )}
-        </LinearGradient>
-      </Animated.View>
+        </Animated.View>
 
-      <Animated.View entering={FadeInDown.duration(500).delay(120)} style={styles.statGrid}>
-        <View style={styles.statCard}>
-          <Text style={styles.statValue}>{formatCurrency(data.totalSpent)}</Text>
-          <Text style={styles.statLabel}>Total Spent (All Time)</Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statValue}>{data.expenseCount}</Text>
-          <Text style={styles.statLabel}>Total Expenses</Text>
-        </View>
-      </Animated.View>
+        <Animated.View entering={FadeInUp.duration(500).delay(240)} style={styles.panel}>
+          <Text style={styles.panelTitle}>Last 6 months</Text>
+          <TrendBars data={data.monthlyTrend} />
+        </Animated.View>
 
-      <Animated.View entering={FadeInDown.duration(500).delay(180)} style={styles.panel}>
-        <View style={styles.panelHeader}>
-          <Text style={styles.panelTitle}>Recent Expenses</Text>
-          <AnimatedPressable onPress={() => navigation.navigate('Expenses')}>
-            <Text style={styles.panelLink}>See all →</Text>
-          </AnimatedPressable>
-        </View>
-        {data.recentExpenses.length ? (
-          data.recentExpenses.map((e, i) => (
-            <Animated.View key={e.id} entering={FadeInRight.duration(400).delay(220 + i * 60)}>
-              <TxnRow expense={e} />
-            </Animated.View>
-          ))
-        ) : (
-          <View style={styles.emptyState}>
-            <View style={styles.emptyIcon}>
-              <EmptyBoxIcon size={24} color={colors.textMuted} />
-            </View>
-            <Text style={styles.emptyTitle}>No expenses yet</Text>
-            <Text style={styles.emptyText}>Add your first expense to see it here.</Text>
-            <AnimatedPressable
-              style={styles.emptyButton}
-              onPress={() => navigation.getParent()?.navigate('ExpenseForm')}
-            >
-              <PlusIcon size={14} color={colors.accentContrast} />
-              <Text style={styles.emptyButtonText}>Add expense</Text>
+        <Animated.View entering={FadeInDown.duration(500).delay(280)} style={styles.panel}>
+          <View style={styles.panelHeader}>
+            <Text style={styles.panelTitle}>Recent</Text>
+            <AnimatedPressable onPress={() => navigation.navigate('Expenses')}>
+              <Text style={styles.panelLink}>See all →</Text>
             </AnimatedPressable>
           </View>
-        )}
-      </Animated.View>
-
-      <Animated.View entering={FadeInUp.duration(500).delay(240)} style={styles.panel}>
-        <Text style={styles.panelTitle}>By Category</Text>
-        {pieData.length ? (
-          <PieChart
-            data={pieData}
-            width={chartWidth}
-            height={180}
-            chartConfig={chartConfig}
-            accessor="population"
-            backgroundColor="transparent"
-            paddingLeft="8"
-          />
-        ) : (
-          <Text style={styles.emptyText}>No data yet.</Text>
-        )}
-      </Animated.View>
-
-      <Animated.View entering={FadeInUp.duration(500).delay(300)} style={styles.panel}>
-        <Text style={styles.panelTitle}>Spending Trend — Last 6 Months</Text>
-        <BarChart
-          data={barData}
-          width={chartWidth}
-          height={200}
-          chartConfig={chartConfig}
-          fromZero
-          withInnerLines={false}
-          showValuesOnTopOfBars
-          yAxisLabel=""
-          yAxisSuffix=""
-          style={{ marginLeft: -16 }}
-        />
-      </Animated.View>
-    </ScrollView>
+          {data.recentExpenses.length ? (
+            data.recentExpenses.map((e, i) => (
+              <Animated.View key={e.id} entering={FadeInRight.duration(400).delay(300 + i * 60)}>
+                <TxnRow expense={e} />
+              </Animated.View>
+            ))
+          ) : (
+            <View style={styles.emptyState}>
+              <View style={styles.emptyIcon}>
+                <EmptyBoxIcon size={24} color={colors.textMuted} />
+              </View>
+              <Text style={styles.emptyTitle}>No expenses yet</Text>
+              <Text style={styles.emptyText}>Add your first expense, or type it in plain words.</Text>
+              <AnimatedPressable
+                style={styles.emptyButton}
+                onPress={() => navigation.getParent()?.navigate('ExpenseForm')}
+              >
+                <PlusIcon size={14} color={colors.accentContrast} />
+                <Text style={styles.emptyButtonText}>Add expense</Text>
+              </AnimatedPressable>
+            </View>
+          )}
+        </Animated.View>
+      </ScrollView>
+    </View>
   );
-}
-
-function hexToRgba(hex: string, opacity: number) {
-  const clean = hex.replace('#', '');
-  const r = parseInt(clean.substring(0, 2), 16);
-  const g = parseInt(clean.substring(2, 4), 16);
-  const b = parseInt(clean.substring(4, 6), 16);
-  return `rgba(${r}, ${g}, ${b}, ${opacity})`;
 }
 
 const makeStyles = (colors: Colors, topInset: number) => StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.bg },
-  container: { padding: 20, paddingTop: 20 + topInset, paddingBottom: 100 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
-  pageTitle: { color: colors.text, fontSize: 22, fontWeight: '700' },
+  container: { padding: 20, paddingTop: 16 + topInset, paddingBottom: 120 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 },
+  greeting: { color: colors.textMuted, fontSize: 13, fontWeight: '600' },
+  pageTitle: { color: colors.text, fontSize: 26, fontWeight: '800', marginTop: 1 },
   themeToggle: {
-    width: 38, height: 38, borderRadius: 12, backgroundColor: colors.surface,
+    width: 42, height: 42, borderRadius: 14, backgroundColor: colors.surface,
     borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center',
   },
-  balanceCardWrap: { marginBottom: 16 },
-  balanceGlow: { top: -30, right: -20 },
-  balanceCard: { borderRadius: 22, padding: 22, overflow: 'hidden' },
-  balanceLabel: { color: colors.accentContrast, opacity: 0.75, fontSize: 11, fontWeight: '700', letterSpacing: 1 },
-  balanceValue: { color: colors.accentContrast, fontSize: 32, fontWeight: '800', marginTop: 4, marginBottom: 16 },
-  balanceStats: { flexDirection: 'row', gap: 10 },
-  balanceStat: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: 'rgba(6,33,15,0.18)', borderRadius: 999, paddingVertical: 8, paddingHorizontal: 12,
+  heroWrap: {
+    marginBottom: 14, borderRadius: 26,
+    boxShadow: `0px 12px 24px ${withAlpha(colors.heroFrom, 0.35)}`, elevation: 8,
   },
-  balanceStatNegative: {},
-  balanceStatIcon: {
-    width: 24, height: 24, borderRadius: 999, backgroundColor: 'rgba(6,33,15,0.28)',
-    alignItems: 'center', justifyContent: 'center',
+  hero: { borderRadius: 26, padding: 22, overflow: 'hidden' },
+  heroCircleA: { position: 'absolute', width: 190, height: 190, borderRadius: 95, right: -60, top: -80, backgroundColor: 'rgba(255,255,255,0.10)' },
+  heroCircleB: { position: 'absolute', width: 120, height: 120, borderRadius: 60, right: 40, bottom: -70, backgroundColor: 'rgba(255,255,255,0.07)' },
+  heroLabel: { color: 'rgba(255,255,255,0.78)', fontSize: 11, fontWeight: '800', letterSpacing: 1.2 },
+  heroValue: { color: '#ffffff', fontSize: 36, fontWeight: '800', marginTop: 6, marginBottom: 18 },
+  heroTrack: { height: 8, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.22)', overflow: 'hidden' },
+  heroFill: { height: '100%', borderRadius: 999, backgroundColor: '#ffffff' },
+  heroFillOver: { backgroundColor: '#ffb4c0' },
+  heroMetaRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 },
+  heroMeta: { color: 'rgba(255,255,255,0.82)', fontSize: 12 },
+  heroMetaStrong: { color: '#ffffff', fontWeight: '800' },
+  heroEmpty: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 6 },
+  heroLink: { color: '#ffffff', fontWeight: '800', fontSize: 13, textDecorationLine: 'underline' },
+  coach: {
+    flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 20, marginBottom: 14,
+    backgroundColor: colors.surface, borderWidth: 1, borderColor: withAlpha(colors.accent, 0.35),
   },
-  balanceStatIconNegative: { backgroundColor: 'rgba(6,33,15,0.4)' },
-  balanceStatLabel: { color: colors.accentContrast, opacity: 0.75, fontSize: 10 },
-  balanceStatValue: { color: colors.accentContrast, fontWeight: '700', fontSize: 13 },
-  balanceEmpty: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' },
-  balanceEmptyText: { color: colors.accentContrast, fontSize: 13 },
-  balanceEmptyLink: { color: colors.accentContrast, fontWeight: '700', fontSize: 13, textDecorationLine: 'underline' },
-  statGrid: { flexDirection: 'row', gap: 12, marginBottom: 16 },
-  statCard: {
-    flex: 1, backgroundColor: colors.surface, borderRadius: 16, padding: 16,
-    borderWidth: 1, borderColor: colors.border,
-  },
-  statValue: { color: colors.text, fontSize: 18, fontWeight: '700' },
-  statLabel: { color: colors.textMuted, fontSize: 11, marginTop: 4 },
-  panel: { backgroundColor: colors.surface, borderRadius: 18, padding: 18, marginBottom: 16, borderWidth: 1, borderColor: colors.border },
-  panelHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  panelTitle: { color: colors.text, fontSize: 15, fontWeight: '700', marginBottom: 4 },
-  panelLink: { color: colors.accent, fontSize: 12, fontWeight: '700' },
+  coachIcon: { width: 40, height: 40, borderRadius: 14, backgroundColor: withAlpha(colors.accent, 0.16), alignItems: 'center', justifyContent: 'center' },
+  coachTop: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 3 },
+  coachTitle: { color: colors.text, fontWeight: '800', fontSize: 13 },
+  coachText: { color: colors.textMuted, fontSize: 12.5, lineHeight: 17 },
+  statGrid: { flexDirection: 'row', gap: 12, marginBottom: 14 },
+  statCard: { flex: 1, backgroundColor: colors.surface, borderRadius: 20, padding: 16, borderWidth: 1, borderColor: colors.border },
+  statValue: { color: colors.text, fontSize: 18, fontWeight: '800' },
+  statLabel: { color: colors.textMuted, fontSize: 11.5, marginTop: 4 },
+  panel: { backgroundColor: colors.surface, borderRadius: 22, padding: 18, marginBottom: 14, borderWidth: 1, borderColor: colors.border },
+  panelHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
+  panelTitle: { color: colors.text, fontSize: 15, fontWeight: '800', marginBottom: 4 },
+  panelLink: { color: colors.accent, fontSize: 12, fontWeight: '800' },
+  donutRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 18, marginTop: 10 },
+  legend: { flex: 1, minWidth: 130, gap: 9 },
+  legendRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  legendDot: { width: 10, height: 10, borderRadius: 5 },
+  legendName: { flex: 1, color: colors.text, fontSize: 13, fontWeight: '600' },
+  legendPct: { color: colors.textMuted, fontSize: 12, fontWeight: '700' },
   emptyText: { color: colors.textMuted, fontSize: 13, paddingVertical: 12, textAlign: 'center' },
   emptyState: { alignItems: 'center', paddingVertical: 20 },
-  emptyIcon: {
-    width: 52, height: 52, borderRadius: 16, backgroundColor: colors.surface2,
-    alignItems: 'center', justifyContent: 'center', marginBottom: 12,
-  },
-  emptyTitle: { color: colors.text, fontSize: 14, fontWeight: '700', marginBottom: 4 },
+  emptyIcon: { width: 52, height: 52, borderRadius: 16, backgroundColor: colors.surface2, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
+  emptyTitle: { color: colors.text, fontSize: 14, fontWeight: '800', marginBottom: 4 },
   emptyButton: {
     flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12,
-    backgroundColor: colors.accent, borderRadius: 999, paddingVertical: 9, paddingHorizontal: 16,
+    backgroundColor: colors.accent, borderRadius: 999, paddingVertical: 10, paddingHorizontal: 18,
   },
-  emptyButtonText: { color: colors.accentContrast, fontWeight: '700', fontSize: 13 },
+  emptyButtonText: { color: colors.accentContrast, fontWeight: '800', fontSize: 13 },
 });

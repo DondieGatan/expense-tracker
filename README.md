@@ -8,9 +8,12 @@ dashboard charts, per-user currencies and CSV export on top of full CRUD.
 
 [![Expense Tracker](https://dondiegatan.github.io/dondiegatan-portfolio/assets/covers/expense-tracker.webp)](https://dondiegatan.github.io/dondiegatan-portfolio/projects.html#expense-tracker)
 
-| Login | Dashboard |
-|---|---|
-| ![Login screen](docs/screenshots/login.png) | ![Dashboard screen](docs/screenshots/dashboard.png) |
+| Login | Dashboard | Insights | Magic add |
+|---|---|---|---|
+| ![Login screen](docs/screenshots/login.png) | ![Dashboard screen](docs/screenshots/dashboard.png) | ![Insights screen](docs/screenshots/insights.png) | ![Magic add](docs/screenshots/magic-add.png) |
+
+*Screenshots are from a local run with throwaway demo data and no AI key, so the badges read "Smart rules": the
+rule-based path described under [AI features](#ai-features).*
 
 **Live web app:** https://expense-tracker-web-rosy.vercel.app ·
 [Demo video on my portfolio](https://dondiegatan.github.io/dondiegatan-portfolio/projects.html#expense-tracker) · built by
@@ -75,10 +78,36 @@ servers. Region choice matters when compute and data live on different providers
   category
 - **Forgot-password flow** — a SendGrid-emailed one-time code, hashed and single-use on the server, with no account
   enumeration
-- **Light/dark theme** with a persisted preference, animated charts, swipe-to-delete on native (a dedicated delete
-  action on web), pull-to-refresh and haptic feedback
+- **AI features** (see below): magic add, automatic categories, a monthly coach, repeating-charge and outlier
+  detection, a budget suggestion, and "ask about your spending"
+- **Light/dark theme** ("midnight indigo" design system in one file, `mobile/src/theme/colors.ts`) with a persisted
+  preference, a donut chart and trend bars drawn in SVG, swipe-to-delete on native (a dedicated delete action on
+  web), day-grouped history, pull-to-refresh and haptic feedback
 - **Three ways to run it** from one codebase: a real Android APK built with EAS, the Expo web build on Vercel, and
   Expo Go for development
+
+## AI features
+
+Every AI feature has two paths: a rule-based path that is always available, and a Gemini path that makes the
+wording or reading better when an API key is set. With no key (or when Gemini is busy) the app keeps working and
+every result is labelled with where it came from (`AI`, `Smart rules` or `Calculated`), so nothing pretends to be
+smarter than it is.
+
+| Feature | Where | How it works |
+|---|---|---|
+| **Magic add** | Add Expense | Type "coffee 15 and taxi 30 yesterday". Gemini (or, without a key, a rule-based reader that understands amounts, currency words, "yesterday", weekdays, `5/10`, "with card") returns suggestions; the user confirms and the normal, validated create endpoint stores them. |
+| **Automatic category** | Add Expense | A keyword categoriser (UAE-flavoured: Careem, DEWA, Carrefour, Salik...) suggests a category as you type; Gemini is asked only when the rules recognise nothing. |
+| **Monthly coach** | Home, Insights | The numbers are calculated in Python from the user's own expenses; Gemini only writes the headline and tips. Every number in its answer is checked against the calculated facts, and an answer containing a figure that is not in them is thrown away in favour of template wording. |
+| **Honest projection** | Insights | Month-end projection = spent so far + expected bills not yet paid + everyday daily rate x days left. Rent and subscriptions are detected (same charge in 3+ months) and counted once instead of being stretched across the month. |
+| **Worth a look** | Insights | Outlier detection: an expense far above that user's own history in the same category. |
+| **Repeating charges** | Insights | Subscriptions and bills that recur month after month, with their monthly total. |
+| **Budget suggestion** | Budget | Average of the last complete months plus a 5% cushion, one tap to use. |
+| **Ask about your spending** | Insights | Common questions ("how much did I spend on food this month?", "biggest expense last month?", "budget left?") are answered by exact calculation; open questions go to Gemini with a compact summary of recent spending. |
+
+Safeguards: the model only ever *suggests* (nothing is saved without confirmation); user text is fenced as data and
+never followed as instructions; every suggested field is re-validated against the app's categories, payment
+methods, date window and amount range; no name or email is sent to the model; AI routes are rate-limited per user.
+Backend: `backend/app/ai/` (categoriser, parser, insights, ask, Gemini client), covered by `backend/tests/test_ai.py`.
 
 ## Project layout
 
@@ -115,6 +144,11 @@ All endpoints are prefixed with `/api` and (except `/health`, `/auth/register`,
 | PUT/DELETE | `/expenses/:id` | Update / delete an expense |
 | GET/PUT | `/budget` | Get / set the monthly budget |
 | GET | `/dashboard` | Aggregated totals, category breakdown, 6-month trend |
+| GET | `/ai/status` | Whether the Gemini path is configured (`aiEnabled`) |
+| POST | `/ai/categorize` | `{description}` -> suggested category |
+| POST | `/ai/parse` | `{text}` -> expense suggestions from plain words (not saved) |
+| GET | `/ai/insights` | Month facts, projection, outliers, repeating charges, headline and tips |
+| POST | `/ai/ask` | `{question}` -> answer with `source`: `calculated`, `ai` or `unavailable` |
 
 ## Run the backend
 
@@ -125,7 +159,8 @@ Server instance (`localhost\SQLEXPRESS` with Windows authentication, overridable
 
 Other environment variables: `SECRET_KEY` and `JWT_SECRET_KEY` (always set real values in production),
 `CORS_ORIGINS` (comma-separated allowlist for browser clients), and optionally `SENDGRID_API_KEY` / `SENDGRID_FROM`
-for password-reset email.
+for password-reset email and `GEMINI_API_KEY` for the AI features' Gemini path (`GEMINI_MODEL` and
+`GEMINI_FALLBACK_MODEL` are optional; leave the key out and the rule-based paths are used).
 
 ```bash
 cd backend

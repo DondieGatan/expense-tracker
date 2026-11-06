@@ -12,13 +12,31 @@ import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
 import { Colors } from '../theme/colors';
 import { api, API_BASE, getAccessToken } from '../api/client';
+import { invalidateInsights } from '../api/insights';
 import { EXPENSE_CATEGORIES } from '../theme/constants';
 import TxnRow from '../components/TxnRow';
 import SwipeableRow from '../components/SwipeableRow';
 import Skeleton from '../components/Skeleton';
+import AuroraBackground from '../components/AuroraBackground';
 import AnimatedPressable from '../components/AnimatedPressable';
 import { SearchIcon, CategoryIcon, DownloadIcon, EmptyBoxIcon, PlusIcon } from '../components/icons';
+import { formatCurrency, formatDate, todayIso } from '../utils/format';
+import { categoryColor } from '../theme/colors';
 import type { Expense } from '../api/types';
+
+type ListRow =
+  | { type: 'header'; key: string; date: string; total: number }
+  | { type: 'expense'; key: string; expense: Expense };
+
+function dayLabel(iso: string): string {
+  const today = todayIso();
+  const [y, m, d] = today.split('-').map(Number);
+  const yesterday = new Date(y, m - 1, d - 1);
+  const yesterdayIso = todayIso(yesterday);
+  if (iso === today) return 'Today';
+  if (iso === yesterdayIso) return 'Yesterday';
+  return formatDate(iso, { weekday: 'short', month: 'short', day: 'numeric' });
+}
 
 export default function ExpensesScreen() {
   const { colors } = useTheme();
@@ -70,6 +88,7 @@ export default function ExpensesScreen() {
         style: 'destructive',
         onPress: async () => {
           await api.delete(`/expenses/${id}`);
+          invalidateInsights();
           if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           load(search, category);
         },
@@ -115,10 +134,32 @@ export default function ExpensesScreen() {
 
   const hasFilters = Boolean(search || category);
 
+  // Group the list by day, each day with a header and its total: far easier to scan than one long flat list.
+  const rows = useMemo<ListRow[]>(() => {
+    const out: ListRow[] = [];
+    let currentDate = '';
+    let headerIndex = -1;
+    for (const expense of expenses) {
+      if (expense.date !== currentDate) {
+        currentDate = expense.date;
+        headerIndex = out.length;
+        out.push({ type: 'header', key: `h-${expense.date}`, date: expense.date, total: 0 });
+      }
+      const header = out[headerIndex] as Extract<ListRow, { type: 'header' }>;
+      header.total += expense.amount;
+      out.push({ type: 'expense', key: String(expense.id), expense });
+    }
+    return out;
+  }, [expenses]);
+
   return (
     <View style={styles.flex}>
+      <AuroraBackground />
       <View style={styles.header}>
-        <Text style={styles.pageTitle}>Expenses</Text>
+        <View>
+          <Text style={styles.pageTitle}>History</Text>
+          <Text style={styles.pageSubtitle}>{expenses.length} expense{expenses.length === 1 ? '' : 's'}{hasFilters ? ' match' : ''}</Text>
+        </View>
         <AnimatedPressable style={styles.exportBtn} onPress={onExport} disabled={exporting}>
           <DownloadIcon size={16} color={colors.text} />
         </AnimatedPressable>
@@ -154,7 +195,7 @@ export default function ExpensesScreen() {
                 onPress={() => setCategory(value)}
               >
                 {value ? (
-                  <CategoryIcon category={value} size={13} color={active ? colors.accentContrast : colors.textMuted} />
+                  <CategoryIcon category={value} size={13} color={active ? colors.accentContrast : categoryColor(value)} />
                 ) : null}
                 <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{item}</Text>
               </AnimatedPressable>
@@ -178,8 +219,8 @@ export default function ExpensesScreen() {
         </View>
       ) : (
         <FlatList
-          data={expenses}
-          keyExtractor={(item) => String(item.id)}
+          data={rows}
+          keyExtractor={(item) => item.key}
           contentContainerStyle={styles.list}
           refreshing={refreshing}
           onRefresh={() => load(search, category, true)}
@@ -207,23 +248,34 @@ export default function ExpensesScreen() {
               ) : null}
             </Animated.View>
           }
-          renderItem={({ item, index }) => (
-            <Animated.View
-              entering={FadeInRight.duration(350).delay(Math.min(index, 8) * 50)}
-              layout={Layout.springify()}
-              style={styles.row}
-            >
-              <SwipeableRow onDelete={() => onDelete(item.id, item.description)}>
-                <AnimatedPressable
-                  scaleTo={0.98}
-                  style={styles.rowMain}
-                  onPress={() => navigation.navigate('ExpenseForm', { expenseId: item.id })}
-                >
-                  <TxnRow expense={item} subtitleExtra={item.paymentMethod} />
-                </AnimatedPressable>
-              </SwipeableRow>
-            </Animated.View>
-          )}
+          renderItem={({ item, index }) => {
+            if (item.type === 'header') {
+              return (
+                <View style={styles.dayHeader}>
+                  <Text style={styles.dayTitle}>{dayLabel(item.date)}</Text>
+                  <Text style={styles.dayTotal}>{formatCurrency(item.total)}</Text>
+                </View>
+              );
+            }
+            const expense = item.expense;
+            return (
+              <Animated.View
+                entering={FadeInRight.duration(350).delay(Math.min(index, 8) * 50)}
+                layout={Layout.springify()}
+                style={styles.row}
+              >
+                <SwipeableRow onDelete={() => onDelete(expense.id, expense.description)}>
+                  <AnimatedPressable
+                    scaleTo={0.98}
+                    style={styles.rowMain}
+                    onPress={() => navigation.navigate('ExpenseForm', { expenseId: expense.id })}
+                  >
+                    <TxnRow expense={expense} subtitleExtra={expense.paymentMethod} hideDate />
+                  </AnimatedPressable>
+                </SwipeableRow>
+              </Animated.View>
+            );
+          }}
         />
       )}
     </View>
@@ -236,23 +288,28 @@ const makeStyles = (colors: Colors, topInset: number) => StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     padding: 20, paddingTop: 20 + topInset, paddingBottom: 8,
   },
-  pageTitle: { color: colors.text, fontSize: 22, fontWeight: '700' },
+  pageTitle: { color: colors.text, fontSize: 26, fontWeight: '800' },
+  pageSubtitle: { color: colors.textMuted, fontSize: 13, marginTop: 2 },
+  dayHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 14, marginBottom: 2 },
+  dayTitle: { color: colors.textMuted, fontSize: 12, fontWeight: '800', letterSpacing: 0.6, textTransform: 'uppercase' },
+  dayTotal: { color: colors.textMuted, fontSize: 12, fontWeight: '700' },
   exportBtn: {
-    width: 36, height: 36, borderRadius: 12, backgroundColor: colors.surface,
+    width: 42, height: 42, borderRadius: 14, backgroundColor: colors.surface,
     borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center',
   },
   searchBar: {
     flexDirection: 'row', alignItems: 'center', gap: 8, marginHorizontal: 20,
-    backgroundColor: colors.surface, borderRadius: 12, borderWidth: 1, borderColor: colors.border,
-    paddingHorizontal: 12,
+    backgroundColor: colors.surface, borderRadius: 16, borderWidth: 1, borderColor: colors.border,
+    paddingHorizontal: 14,
   },
-  searchInput: { flex: 1, color: colors.text, paddingVertical: 10, fontSize: 14 },
-  filters: { marginTop: 12, flexGrow: 0 },
-  filtersContent: { paddingHorizontal: 20, gap: 8 },
+  searchInput: { flex: 1, color: colors.text, paddingVertical: 12, fontSize: 14 },
+  // An explicit height: a horizontal FlatList in a flex column otherwise collapses to a sliver on web and clips the chips.
+  filters: { marginTop: 12, flexGrow: 0, flexShrink: 0, height: 40 },
+  filtersContent: { paddingHorizontal: 20, gap: 8, alignItems: 'center' },
   filterChip: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingVertical: 6, paddingHorizontal: 14, borderRadius: 999,
-    backgroundColor: colors.surface2, marginRight: 8,
+    paddingVertical: 8, paddingHorizontal: 14, borderRadius: 999,
+    backgroundColor: colors.surface2, marginRight: 8, borderWidth: 1, borderColor: colors.border,
   },
   filterChipActive: { backgroundColor: colors.accent },
   filterChipText: { color: colors.textMuted, fontSize: 12, fontWeight: '600' },
