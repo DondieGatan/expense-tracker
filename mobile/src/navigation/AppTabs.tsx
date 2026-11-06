@@ -31,7 +31,7 @@ const TAB_LABELS: Record<string, string> = {
 };
 
 function CustomTabBar({ state, navigation }: BottomTabBarProps) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(colors, insets.bottom), [colors, insets.bottom]);
   const parent = navigation.getParent();
@@ -62,10 +62,10 @@ function CustomTabBar({ state, navigation }: BottomTabBarProps) {
       {state.routes.slice(0, 2).map(renderTab)}
 
       <View style={styles.fabWrap}>
-        <PulseGlow color={colors.accent} size={68} style={styles.fabGlow} />
+        <PulseGlow color={isDark ? '#18a3b3' : colors.heroFrom} size={68} style={styles.fabGlow} />
         <AnimatedPressable scaleTo={0.88} onPress={() => parent?.navigate('ExpenseForm')} accessibilityLabel="Add expense">
           <LinearGradient colors={[colors.accent, colors.accentStrong]} style={styles.fab}>
-            <PlusIcon size={24} color="#ffffff" />
+            <PlusIcon size={24} color={colors.accentContrast} />
           </LinearGradient>
         </AnimatedPressable>
       </View>

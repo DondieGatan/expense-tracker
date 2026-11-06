@@ -9,8 +9,8 @@ export default function AuroraBackground() {
   const { colors, isDark } = useTheme();
   return (
     <View style={[StyleSheet.absoluteFill, { pointerEvents: 'none' }]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-      <GlowBlob size={340} color={colors.heroFrom} style={[styles.blob, styles.topRight, { opacity: isDark ? 0.6 : 0.22 }]} />
-      <GlowBlob size={280} color={isDark ? '#8a35cc' : colors.accent2} style={[styles.blob, styles.midLeft, { opacity: isDark ? 0.32 : 0.14 }]} />
+      <GlowBlob size={340} color={colors.accent} style={[styles.blob, styles.topRight, { opacity: isDark ? 0.32 : 0.5 }]} />
+      <GlowBlob size={280} color={isDark ? '#18a3b3' : colors.heroFrom} style={[styles.blob, styles.midLeft, { opacity: isDark ? 0.32 : 0.14 }]} />
     </View>
   );
 }

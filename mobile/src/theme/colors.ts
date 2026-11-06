@@ -1,69 +1,70 @@
-// "Black, vibe purple, white": true-black surfaces, one electric purple (#AC58E9) for everything interactive, and
-// white text. The purple is used as-is on dark; on white it is deepened a step (#8F3FD1) so text and icons keep
-// contrast. Every colour used by a screen comes from here, so the whole app re-skins from this one file.
+// "Lime and deep teal": a dark teal-black surface family with one acid-lime accent (#D6FB00) and a pale lime (#ECFFB6)
+// for soft highlights; palette teal #00545F. The lime is only ever a fill or a glow on dark, and text that sits on it
+// is deep teal. On light surfaces the roles swap: teal is the accent, lime-tinted chalk is the background, and buttons
+// are teal with lime text. Every colour used by a screen comes from here, so the whole app re-skins from this one file.
 export const darkColors = {
-  bg: '#000000',
-  surface: '#0e0b13',
-  surface2: '#1a1424',
-  border: 'rgba(255,255,255,0.10)',
+  bg: '#00242a',
+  surface: '#04363d',
+  surface2: '#08474f',
+  border: 'rgba(236,255,182,0.12)',
   // Barely-there frosted fill for the glass-pill input fields: a solid `surface` reads as an opaque box; this stays
   // translucent so the auth background shows through faintly, matching the glass-card look.
-  fieldFill: 'rgba(255,255,255,0.05)',
-  text: '#ffffff',
-  textMuted: '#a9a1b8',
-  accent: '#ac58e9',
-  accentStrong: '#8f3fd1',
-  accentContrast: '#0a0210',
-  accent2: '#d6b0f7',
-  danger: '#ff6b86',
-  dangerSoft: 'rgba(255,107,134,0.16)',
-  warn: '#ffb84d',
-  success: '#45dc9c',
-  // The AI surfaces (coach, magic add, ask) share one soft purple wash.
-  aiFrom: 'rgba(172,88,233,0.24)',
-  aiTo: 'rgba(172,88,233,0.06)',
-  heroFrom: '#9a40dc',
-  heroTo: '#5a14a0',
-  tabBar: 'rgba(14,11,19,0.96)',
+  fieldFill: 'rgba(236,255,182,0.06)',
+  text: '#f4fbe1',
+  textMuted: '#95b8ae',
+  accent: '#d6fb00',
+  accentStrong: '#b9d800',
+  accentContrast: '#00343a',
+  accent2: '#ecffb6',
+  danger: '#ff7f70',
+  dangerSoft: 'rgba(255,127,112,0.16)',
+  warn: '#ffc25c',
+  success: '#5fe3a1',
+  // The AI surfaces (coach, magic add, ask) share one soft lime-to-teal wash.
+  aiFrom: 'rgba(214,251,0,0.16)',
+  aiTo: 'rgba(0,120,132,0.30)',
+  heroFrom: '#0a7783',
+  heroTo: '#00424a',
+  tabBar: 'rgba(0,38,44,0.96)',
 };
 
 export const lightColors = {
-  bg: '#f6f3fa',
-  surface: '#ffffff',
-  surface2: '#eee6f7',
-  border: 'rgba(10,2,16,0.09)',
-  fieldFill: 'rgba(10,2,16,0.035)',
-  text: '#0b0610',
-  textMuted: '#675e76',
-  accent: '#8f3fd1',
-  accentStrong: '#7326b5',
-  accentContrast: '#ffffff',
-  accent2: '#ac58e9',
-  danger: '#d6264a',
-  dangerSoft: 'rgba(214,38,74,0.11)',
+  bg: '#f5fbe3',
+  surface: '#fdfff2',
+  surface2: '#e7f4bd',
+  border: 'rgba(0,84,95,0.12)',
+  fieldFill: 'rgba(0,84,95,0.045)',
+  text: '#00292e',
+  textMuted: '#4b6a65',
+  accent: '#00545f',
+  accentStrong: '#003a42',
+  accentContrast: '#d6fb00',
+  accent2: '#4f8200',
+  danger: '#c62828',
+  dangerSoft: 'rgba(198,40,40,0.11)',
   warn: '#a85d00',
-  success: '#0b7f58',
-  aiFrom: 'rgba(143,63,209,0.13)',
-  aiTo: 'rgba(172,88,233,0.04)',
-  heroFrom: '#9a40dc',
-  heroTo: '#5a14a0',
-  tabBar: 'rgba(255,255,255,0.97)',
+  success: '#0b7a4b',
+  aiFrom: 'rgba(214,251,0,0.38)',
+  aiTo: 'rgba(0,84,95,0.08)',
+  heroFrom: '#0a7783',
+  heroTo: '#00424a',
+  tabBar: 'rgba(253,255,242,0.97)',
 };
 
 export type Colors = typeof darkColors;
 
 // One fixed colour per category, so a category looks the same on the donut chart, the history list and the filters.
-// Deliberately theme-invariant: clear mid-tones that sit well on both the black and the white backgrounds.
+// Deliberately theme-invariant: clear mid-tones that sit well on both the teal and the pale-lime backgrounds.
 export const CATEGORY_COLORS: Record<string, string> = {
-  Food: '#ff8a4c',
-  Transport: '#4cb8ff',
-  Housing: '#b673f0',
+  Food: '#ff9a4d',
+  Transport: '#4dc3ff',
+  Housing: '#9bd12b',
   Utilities: '#ffd24c',
-  Entertainment: '#ff5fa2',
-  Health: '#3ddc97',
-  Education: '#7c8cff',
-  Shopping: '#ff5c5c',
-  General: '#9a93a8',
+  Entertainment: '#ff6fae',
+  Health: '#2fd6b4',
+  Education: '#8a9bff',
+  Shopping: '#ff6b5c',
+  General: '#8aa5a0',
 };
 
 export function categoryColor(category: string): string {
