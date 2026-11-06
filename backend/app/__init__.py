@@ -31,11 +31,13 @@ def create_app(config_class=Config):
     from app.expenses import expenses_bp
     from app.budget import budget_bp
     from app.dashboard import dashboard_bp
+    from app.ai import ai_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(expenses_bp)
     app.register_blueprint(budget_bp)
     app.register_blueprint(dashboard_bp)
+    app.register_blueprint(ai_bp)
 
     @app.route("/api/health")
     def health():

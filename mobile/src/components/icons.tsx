@@ -123,7 +123,7 @@ export function EyeOffIcon({ size, color }: IconProps) {
 export function ArrowUpIcon({ size, color }: IconProps) {
   return (
     <Svg {...base(size, color)}>
-      <Path d="M12 5v14M19 12l-7 7-7-7" />
+      <Path d="M12 19V5M5 12l7-7 7 7" />
     </Svg>
   );
 }
@@ -158,7 +158,7 @@ export function SearchIcon({ size, color }: IconProps) {
 export function ArrowDownIcon({ size, color }: IconProps) {
   return (
     <Svg {...base(size, color)}>
-      <Path d="M12 19V5M5 12l7-7 7 7" />
+      <Path d="M12 5v14M19 12l-7 7-7-7" />
     </Svg>
   );
 }
@@ -203,6 +203,73 @@ export function EmptyBoxIcon({ size, color }: IconProps) {
       <Path d="M21 8v13H3V8" />
       <Path d="M1 3h22v5H1z" />
       <Line x1={10} y1={12} x2={14} y2={12} />
+    </Svg>
+  );
+}
+
+export function SparklesIcon({ size, color }: IconProps) {
+  return (
+    <Svg {...base(size, color)}>
+      <Path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z" />
+      <Path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15z" />
+      <Path d="M5 16l.6 1.4L7 18l-1.4.6L5 20l-.6-1.4L3 18l1.4-.6L5 16z" />
+    </Svg>
+  );
+}
+
+export function InsightsIcon({ size, color }: IconProps) {
+  return (
+    <Svg {...base(size, color)}>
+      <Path d="M3 3v18h18" />
+      <Path d="M7 15l4-4 3 3 5-6" />
+      <Path d="M17 8h2v2" />
+    </Svg>
+  );
+}
+
+export function SendIcon({ size, color }: IconProps) {
+  return (
+    <Svg {...base(size, color)}>
+      <Line x1={22} y1={2} x2={11} y2={13} />
+      <Polygon points="22 2 15 22 11 13 2 9 22 2" />
+    </Svg>
+  );
+}
+
+export function AlertIcon({ size, color }: IconProps) {
+  return (
+    <Svg {...base(size, color)}>
+      <Path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" />
+      <Line x1={12} y1={9} x2={12} y2={13} />
+      <Line x1={12} y1={17} x2={12.01} y2={17} />
+    </Svg>
+  );
+}
+
+export function RepeatIcon({ size, color }: IconProps) {
+  return (
+    <Svg {...base(size, color)}>
+      <Polyline points="17 1 21 5 17 9" />
+      <Path d="M3 11V9a4 4 0 0 1 4-4h14" />
+      <Polyline points="7 23 3 19 7 15" />
+      <Path d="M21 13v2a4 4 0 0 1-4 4H3" />
+    </Svg>
+  );
+}
+
+export function CheckIcon({ size, color }: IconProps) {
+  return (
+    <Svg {...base(size, color)} strokeWidth={2.6}>
+      <Polyline points="20 6 9 17 4 12" />
+    </Svg>
+  );
+}
+
+export function CloseIcon({ size, color }: IconProps) {
+  return (
+    <Svg {...base(size, color)} strokeWidth={2.4}>
+      <Line x1={18} y1={6} x2={6} y2={18} />
+      <Line x1={6} y1={6} x2={18} y2={18} />
     </Svg>
   );
 }

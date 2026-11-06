@@ -1,12 +1,14 @@
 import React from 'react';
-import { View, ActivityIndicator, Text } from 'react-native';
+import { View, ActivityIndicator, Text, StyleSheet } from 'react-native';
 import { NavigationContainer, DarkTheme, DefaultTheme } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import AuthStack from './AuthStack';
 import AppStack from './AppStack';
+import { useWebFont } from '../hooks/useWebFont';
 
 export default function RootNavigator() {
+  useWebFont();
   const { colors, isDark } = useTheme();
   const { user, loading, retryStatus } = useAuth();
 
@@ -33,9 +35,19 @@ export default function RootNavigator() {
     );
   }
 
+  // On a wide web window the app sits in a centred phone-width column instead of stretching edge to edge.
   return (
-    <NavigationContainer theme={navTheme}>
-      {user ? <AppStack /> : <AuthStack />}
-    </NavigationContainer>
+    <View style={[styles.outer, { backgroundColor: colors.bg }]}>
+      <View style={styles.column}>
+        <NavigationContainer theme={navTheme}>
+          {user ? <AppStack /> : <AuthStack />}
+        </NavigationContainer>
+      </View>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  outer: { flex: 1, alignItems: 'center' },
+  column: { flex: 1, width: '100%', maxWidth: 560 },
+});

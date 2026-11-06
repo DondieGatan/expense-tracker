@@ -31,9 +31,9 @@ export default function PulseGlow({ color, size = 90, style }: Props) {
 
   return (
     <Animated.View
-      pointerEvents="none"
       style={[
         styles.glow,
+        { pointerEvents: 'none' },
         { width: size, height: size, borderRadius: size / 2, backgroundColor: color },
         animatedStyle,
         style,

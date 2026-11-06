@@ -8,6 +8,7 @@ export type AuthStackParamList = {
 export type TabParamList = {
   Dashboard: undefined;
   Expenses: undefined;
+  Insights: undefined;
   Budget: undefined;
 };
 

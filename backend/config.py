@@ -66,6 +66,15 @@ class Config:
     SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY")
     SENDGRID_FROM = os.environ.get("SENDGRID_FROM")
 
+    # Google Gemini powers the written parts of the AI features (natural-language
+    # quick add, the monthly coach's wording, "ask about your spending"). Every
+    # AI feature also has a rule-based path, so with no key set the app still
+    # works and the API says so (source: "rules") instead of failing.
+    GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+    GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+    # A second model with its own free quota; set it empty to disable.
+    GEMINI_FALLBACK_MODEL = os.environ.get("GEMINI_FALLBACK_MODEL", "gemini-2.5-flash-lite")
+
     # In-memory storage — fine for a single free-tier instance (WEB_CONCURRENCY=1),
     # but resets on restart and won't share state across multiple instances.
     RATELIMIT_ENABLED = True
@@ -78,3 +87,4 @@ class TestConfig(Config):
     TESTING = True
     RATELIMIT_ENABLED = False
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
+    GEMINI_API_KEY = ""     # tests never reach the real API; the AI paths are tested with a stub
