@@ -20,6 +20,7 @@ import DateField from '../components/DateField';
 import { formatCurrency, formatDate, todayIso } from '../utils/format';
 import type { AppStackParamList } from '../navigation/types';
 import type { CategorizeResult, ParseResult, SuggestedExpense } from '../api/types';
+import DisplayText from '../components/DisplayText';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'ExpenseForm'>;
 
@@ -227,7 +228,7 @@ export default function ExpenseFormScreen({ route, navigation }: Props) {
           <AnimatedPressable style={styles.backLink} onPress={() => navigation.goBack()}>
             <BackIcon size={16} color={colors.text} />
           </AnimatedPressable>
-          <Text style={styles.pageTitle}>{isEdit ? 'Edit Expense' : 'Add Expense'}</Text>
+          <DisplayText style={styles.pageTitle}>{isEdit ? 'Edit Expense' : 'Add Expense'}</DisplayText>
           {isEdit ? (
             <AnimatedPressable style={styles.deleteLink} onPress={onDelete} disabled={deleting}>
               {deleting ? (

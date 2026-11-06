@@ -16,6 +16,7 @@ import AnimatedPressable from '../components/AnimatedPressable';
 import AuroraBackground from '../components/AuroraBackground';
 import ProgressRing from '../components/ProgressRing';
 import Skeleton from '../components/Skeleton';
+import DisplayText from '../components/DisplayText';
 
 export default function BudgetScreen() {
   const { colors } = useTheme();
@@ -117,7 +118,7 @@ export default function BudgetScreen() {
       <AuroraBackground />
       <ScrollView style={styles.flex} contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         <Animated.View entering={FadeInDown.duration(400)} style={styles.header}>
-          <Text style={styles.pageTitle}>Budget</Text>
+          <DisplayText style={styles.pageTitle}>Budget</DisplayText>
           <Text style={styles.pageSubtitle}>Set a monthly limit and watch it live</Text>
         </Animated.View>
 

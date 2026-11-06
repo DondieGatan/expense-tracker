@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient as SvgGradient, Stop } from 'react-native-svg';
 import { useTheme } from '../context/ThemeContext';
+import DisplayText from './DisplayText';
 
 interface Props {
   percent: number;          // 0..100+ (anything above 100 is drawn as a full ring in the warning colour)
@@ -47,7 +48,7 @@ export default function ProgressRing({ percent, size = 120, thickness = 12, labe
         />
       </Svg>
       <View style={[styles.center, { pointerEvents: 'none' }]}>
-        {label ? <Text style={[styles.label, { color: over ? colors.danger : colors.text }]}>{label}</Text> : null}
+        {label ? <DisplayText style={[styles.label, { color: over ? colors.danger : colors.text }]}>{label}</DisplayText> : null}
         {sublabel ? <Text style={[styles.sublabel, { color: colors.textMuted }]}>{sublabel}</Text> : null}
       </View>
     </View>

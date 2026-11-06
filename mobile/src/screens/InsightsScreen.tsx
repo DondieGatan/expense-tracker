@@ -20,6 +20,7 @@ import {
   SparklesIcon, AlertIcon, RepeatIcon, SendIcon, ArrowUpIcon, ArrowDownIcon, PlusIcon, EmptyBoxIcon,
 } from '../components/icons';
 import type { AskResult, Insights } from '../api/types';
+import DisplayText from '../components/DisplayText';
 
 interface ChatItem {
   id: number;
@@ -93,7 +94,7 @@ export default function InsightsScreen() {
   const header = (
     <View style={styles.headerRow}>
       <View style={{ flex: 1 }}>
-        <Text style={styles.pageTitle}>Insights</Text>
+        <DisplayText style={styles.pageTitle}>Insights</DisplayText>
         <Text style={styles.pageSubtitle}>{data ? data.monthLabel : 'Your spending, explained'}</Text>
       </View>
       {data ? <AiBadge source={data.source} /> : null}

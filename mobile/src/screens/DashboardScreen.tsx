@@ -18,6 +18,7 @@ import AnimatedPressable from '../components/AnimatedPressable';
 import DonutChart from '../components/DonutChart';
 import TrendBars from '../components/TrendBars';
 import AiBadge from '../components/AiBadge';
+import DisplayText from '../components/DisplayText';
 import { SunIcon, MoonIcon, EmptyBoxIcon, PlusIcon, SparklesIcon, ArrowRightIcon } from '../components/icons';
 import type { DashboardData, Insights } from '../api/types';
 
@@ -65,9 +66,9 @@ export default function DashboardScreen() {
     <View style={styles.headerRow}>
       <View style={{ flex: 1 }}>
         <Animated.Text entering={FadeInDown.duration(400)} style={styles.greeting}>{greeting()}{firstName ? ',' : ''}</Animated.Text>
-        <Animated.Text entering={FadeInDown.duration(400).delay(40)} style={styles.pageTitle} numberOfLines={1}>
-          {firstName || 'Dashboard'}
-        </Animated.Text>
+        <Animated.View entering={FadeInDown.duration(400).delay(40)}>
+          <DisplayText style={styles.pageTitle} numberOfLines={1}>{firstName || 'Dashboard'}</DisplayText>
+        </Animated.View>
       </View>
       <AnimatedPressable style={styles.themeToggle} hitSlop={16} onPress={toggleTheme} accessibilityLabel="Toggle light or dark theme">
         {isDark ? <SunIcon size={17} color={colors.text} /> : <MoonIcon size={17} color={colors.text} />}
@@ -122,7 +123,7 @@ export default function DashboardScreen() {
             <View style={styles.heroCircleA} />
             <View style={styles.heroCircleB} />
             <Text style={styles.heroLabel}>SPENT THIS MONTH</Text>
-            <Text style={styles.heroValue}>{formatCurrency(animatedThisMonth)}</Text>
+            <DisplayText style={styles.heroValue}>{formatCurrency(animatedThisMonth)}</DisplayText>
 
             {data.budgetLimit != null ? (
               <View>
@@ -256,18 +257,18 @@ const makeStyles = (colors: Colors, topInset: number) => StyleSheet.create({
     boxShadow: `0px 12px 24px ${withAlpha(colors.heroFrom, 0.35)}`, elevation: 8,
   },
   hero: { borderRadius: 26, padding: 22, overflow: 'hidden' },
-  heroCircleA: { position: 'absolute', width: 190, height: 190, borderRadius: 95, right: -60, top: -80, backgroundColor: 'rgba(255,255,255,0.10)' },
-  heroCircleB: { position: 'absolute', width: 120, height: 120, borderRadius: 60, right: 40, bottom: -70, backgroundColor: 'rgba(255,255,255,0.07)' },
-  heroLabel: { color: 'rgba(255,255,255,0.78)', fontSize: 11, fontWeight: '800', letterSpacing: 1.2 },
-  heroValue: { color: '#ffffff', fontSize: 36, fontWeight: '800', marginTop: 6, marginBottom: 18 },
-  heroTrack: { height: 8, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.22)', overflow: 'hidden' },
-  heroFill: { height: '100%', borderRadius: 999, backgroundColor: '#ffffff' },
+  heroCircleA: { position: 'absolute', width: 190, height: 190, borderRadius: 95, right: -60, top: -80, backgroundColor: 'rgba(245,218,191,0.10)' },
+  heroCircleB: { position: 'absolute', width: 120, height: 120, borderRadius: 60, right: 40, bottom: -70, backgroundColor: 'rgba(245,218,191,0.07)' },
+  heroLabel: { color: 'rgba(245,218,191,0.80)', fontSize: 11, fontWeight: '800', letterSpacing: 1.2 },
+  heroValue: { color: '#fff1e0', fontSize: 38, fontWeight: '700', marginTop: 6, marginBottom: 18 },
+  heroTrack: { height: 8, borderRadius: 999, backgroundColor: 'rgba(245,218,191,0.22)', overflow: 'hidden' },
+  heroFill: { height: '100%', borderRadius: 999, backgroundColor: '#f5dabf' },
   heroFillOver: { backgroundColor: '#ffb4c0' },
   heroMetaRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 },
-  heroMeta: { color: 'rgba(255,255,255,0.82)', fontSize: 12 },
-  heroMetaStrong: { color: '#ffffff', fontWeight: '800' },
+  heroMeta: { color: 'rgba(245,218,191,0.85)', fontSize: 12 },
+  heroMetaStrong: { color: '#fff1e0', fontWeight: '800' },
   heroEmpty: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 6 },
-  heroLink: { color: '#ffffff', fontWeight: '800', fontSize: 13, textDecorationLine: 'underline' },
+  heroLink: { color: '#fff1e0', fontWeight: '800', fontSize: 13, textDecorationLine: 'underline' },
   coach: {
     flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 20, marginBottom: 14,
     backgroundColor: colors.surface, borderWidth: 1, borderColor: withAlpha(colors.accent, 0.35),

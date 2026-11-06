@@ -15,6 +15,7 @@ import AnimatedPressable from '../components/AnimatedPressable';
 import { useWebAutofillFix } from '../hooks/useWebAutofillFix';
 import { useWebFont, webFontFamily } from '../hooks/useWebFont';
 import type { AuthStackParamList } from '../navigation/types';
+import DisplayText from '../components/DisplayText';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'ForgotPassword'>;
 
@@ -52,14 +53,14 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
   const content = (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
       <Animated.View entering={FadeInUp.duration(500).springify().damping(16)} style={styles.card}>
-        <GlowBlob size={170} color={colors.accent} style={styles.glow} />
+        <GlowBlob size={170} color={colors.heroFrom} style={styles.glow} />
 
         <View style={styles.cardContent}>
           <Animated.View entering={FadeIn.duration(500).delay(100)} style={styles.header}>
             <View style={styles.logoIcon}>
               <Image source={require('../../assets/logo-mark.png')} style={styles.logoImage} resizeMode="contain" />
             </View>
-            <Text style={styles.title}>Forgot password?</Text>
+            <DisplayText style={styles.title}>Forgot password?</DisplayText>
             <Text style={styles.subtitle}>Enter your email and we'll send you a reset code.</Text>
           </Animated.View>
 
@@ -152,7 +153,7 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
   cardContent: { padding: 26 },
   header: { marginBottom: 20, gap: 6, alignItems: 'center' },
   logoIcon: {
-    width: 42, height: 42, borderRadius: 13, backgroundColor: '#07090D',
+    width: 42, height: 42, borderRadius: 13, backgroundColor: '#06201d',
     alignItems: 'center', justifyContent: 'center', marginBottom: 8,
   },
   logoImage: { width: 26, height: 26 },
