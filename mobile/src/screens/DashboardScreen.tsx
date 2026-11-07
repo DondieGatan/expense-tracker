@@ -20,6 +20,7 @@ import TrendBars from '../components/TrendBars';
 import AiBadge from '../components/AiBadge';
 import GlowBlob from '../components/GlowBlob';
 import DisplayText from '../components/DisplayText';
+import FitText from '../components/FitText';
 import { SunIcon, MoonIcon, EmptyBoxIcon, PlusIcon, SparklesIcon, ArrowRightIcon } from '../components/icons';
 import type { DashboardData, Insights } from '../api/types';
 
@@ -124,7 +125,7 @@ export default function DashboardScreen() {
             <GlowBlob size={300} color="#d6fb00" style={styles.heroGlowA} />
             <GlowBlob size={220} color="#18a3b3" style={styles.heroGlowB} />
             <Text style={styles.heroLabel}>SPENT THIS MONTH</Text>
-            <DisplayText style={styles.heroValue}>{formatCurrency(animatedThisMonth)}</DisplayText>
+            <FitText display style={styles.heroValue} maxSize={38} minSize={22} fitTo={formatCurrency(data.thisMonthTotal)}>{formatCurrency(animatedThisMonth)}</FitText>
 
             {data.budgetLimit != null ? (
               <View>
@@ -168,7 +169,7 @@ export default function DashboardScreen() {
 
         <Animated.View entering={FadeInDown.duration(500).delay(150)} style={styles.statGrid}>
           <View style={styles.statCard}>
-            <Text style={styles.statValue} numberOfLines={1}>{formatCurrencyCompact(data.totalSpent)}</Text>
+            <FitText style={styles.statValue} maxSize={18} minSize={12}>{formatCurrencyCompact(data.totalSpent)}</FitText>
             <Text style={styles.statLabel}>Total spent</Text>
           </View>
           <View style={styles.statCard}>

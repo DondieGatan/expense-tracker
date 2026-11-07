@@ -195,7 +195,7 @@ export default function RegisterScreen({ navigation }: Props) {
 
           <View style={styles.footerRow}>
             <Text style={styles.footerText}>Already have an account? </Text>
-            <TouchableOpacity onPress={() => { clearError(); navigation.navigate('Login'); }}>
+            <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => { clearError(); navigation.navigate('Login'); }}>
               <Text style={styles.footerLink}>Sign in</Text>
             </TouchableOpacity>
           </View>

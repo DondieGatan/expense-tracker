@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, TextInput, StyleSheet, ActivityIndicator, ScrollView, Platform } from 'react-native';
+import { View, Text, TextInput, StyleSheet, ActivityIndicator, ScrollView, Platform, useWindowDimensions } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -17,9 +17,12 @@ import AuroraBackground from '../components/AuroraBackground';
 import ProgressRing from '../components/ProgressRing';
 import Skeleton from '../components/Skeleton';
 import DisplayText from '../components/DisplayText';
+import FitText from '../components/FitText';
 
 export default function BudgetScreen() {
   const { colors, mode, setMode } = useTheme();
+  const { width: screenWidth } = useWindowDimensions();
+  const ringSize = screenWidth < 340 ? 84 : 112;   // very narrow phones (a folded Galaxy Fold) need room for the amounts
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(colors, insets.top), [colors, insets.top]);
   const { user, updateCurrency, logout } = useAuth();
@@ -130,7 +133,7 @@ export default function BudgetScreen() {
             <View style={styles.ringRow}>
               <ProgressRing
                 percent={percentUsed}
-                size={112}
+                size={ringSize}
                 thickness={12}
                 over={overBudget}
                 label={`${Math.round(percentUsed)}%`}
@@ -139,11 +142,11 @@ export default function BudgetScreen() {
               <View style={{ flex: 1, gap: 10 }}>
                 <View>
                   <Text style={styles.ringLabel}>Spent this month</Text>
-                  <Text style={[styles.ringValue, overBudget && { color: colors.danger }]}>{formatCurrency(thisMonthSpent)}</Text>
+                  <FitText style={[styles.ringValue, overBudget && { color: colors.danger }]} maxSize={18} minSize={12}>{formatCurrency(thisMonthSpent)}</FitText>
                 </View>
                 <View>
                   <Text style={styles.ringLabel}>{overBudget ? 'Over by' : 'Left to spend'}</Text>
-                  <Text style={styles.ringValue}>{formatCurrency(Math.abs(limitValue - thisMonthSpent))}</Text>
+                  <FitText style={styles.ringValue} maxSize={18} minSize={12}>{formatCurrency(Math.abs(limitValue - thisMonthSpent))}</FitText>
                 </View>
               </View>
             </View>

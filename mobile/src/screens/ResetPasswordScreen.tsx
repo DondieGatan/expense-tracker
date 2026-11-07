@@ -157,12 +157,12 @@ export default function ResetPasswordScreen({ navigation, route }: Props) {
 
           <View style={styles.footerRow}>
             <Text style={styles.footerText}>Didn&apos;t get a code? </Text>
-            <TouchableOpacity onPress={onResend} disabled={resending}>
+            <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={onResend} disabled={resending}>
               <Text style={styles.footerLink}>{resending ? 'Sending…' : 'Resend'}</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.footerRow}>
-            <TouchableOpacity onPress={() => { clearError(); navigation.navigate('Login'); }}>
+            <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => { clearError(); navigation.navigate('Login'); }}>
               <Text style={styles.footerLink}>Back to sign in</Text>
             </TouchableOpacity>
           </View>

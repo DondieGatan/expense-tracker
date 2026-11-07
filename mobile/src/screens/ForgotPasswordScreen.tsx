@@ -114,7 +114,7 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
           </Pressable>
 
           <View style={styles.footerRow}>
-            <TouchableOpacity onPress={() => { clearError(); navigation.navigate('Login'); }}>
+            <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => { clearError(); navigation.navigate('Login'); }}>
               <Text style={styles.footerLink}>Back to sign in</Text>
             </TouchableOpacity>
           </View>
