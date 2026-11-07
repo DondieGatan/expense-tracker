@@ -40,6 +40,7 @@ def create_app(config_class=Config):
     app.register_blueprint(ai_bp)
 
     @app.route("/api/health")
+    @limiter.exempt  # the keep-awake ping calls this every 10 minutes and must not use up the shared request budget
     def health():
         return jsonify({"status": "ok"}), 200
 
