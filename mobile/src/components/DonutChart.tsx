@@ -38,7 +38,7 @@ export default function DonutChart({ slices, size = 170, thickness = 20, centerL
   return (
     <View style={{ width: size, height: size }}>
       <Svg width={size} height={size}>
-        <G rotation={-90} origin={`${size / 2}, ${size / 2}`}>
+        <G>
           <Circle cx={size / 2} cy={size / 2} r={radius} stroke={colors.surface2} strokeWidth={thickness} fill="none" />
           {arcs.map((arc) => (
             <Circle
@@ -50,7 +50,7 @@ export default function DonutChart({ slices, size = 170, thickness = 20, centerL
               strokeWidth={thickness}
               fill="none"
               strokeDasharray={`${arc.length} ${circumference - arc.length}`}
-              strokeDashoffset={-arc.offset}
+              strokeDashoffset={circumference / 4 - arc.offset}
               strokeLinecap="butt"
             />
           ))}
