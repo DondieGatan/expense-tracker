@@ -164,14 +164,14 @@ export default function LoginScreen({ navigation }: Props) {
           </Pressable>
 
           <View style={styles.forgotRow}>
-            <TouchableOpacity onPress={() => { clearError(); navigation.navigate('ForgotPassword'); }}>
+            <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => { clearError(); navigation.navigate('ForgotPassword'); }}>
               <Text style={styles.footerLink}>Forgot password?</Text>
             </TouchableOpacity>
           </View>
 
           <View style={styles.footerRow}>
             <Text style={styles.footerText}>Don&apos;t have an account yet? </Text>
-            <TouchableOpacity onPress={() => { clearError(); navigation.navigate('Register'); }}>
+            <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} onPress={() => { clearError(); navigation.navigate('Register'); }}>
               <Text style={styles.footerLink}>Sign up</Text>
             </TouchableOpacity>
           </View>
