@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 
 from config import Config
 from app.extensions import db, migrate, jwt, cors, limiter
@@ -38,6 +38,23 @@ def create_app(config_class=Config):
     app.register_blueprint(budget_bp)
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(ai_bp)
+
+    # TEMPORARY: find out which address and headers Render's proxy gives the app, so the rate limiter can key on the real
+    # client instead of the proxy. Logs the first 20 requests after each start (health checks skipped), then stops.
+    # Remove this once ProxyFix is configured to match what the log shows.
+    ip_log_left = [20]
+
+    @app.before_request
+    def log_client_address():
+        if ip_log_left[0] <= 0 or request.path == "/api/health":
+            return
+        ip_log_left[0] -= 1
+        h = request.headers
+        app.logger.warning(
+            "client-ip-debug remote_addr=%s x-forwarded-for=%s x-real-ip=%s true-client-ip=%s cf-connecting-ip=%s",
+            request.remote_addr, h.get("X-Forwarded-For"), h.get("X-Real-IP"),
+            h.get("True-Client-IP"), h.get("CF-Connecting-IP"),
+        )
 
     @app.route("/api/health")
     @limiter.exempt  # the keep-awake ping calls this every 10 minutes and must not use up the shared request budget
