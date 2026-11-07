@@ -285,7 +285,7 @@ const makeStyles = (colors: Colors, topInset: number) => StyleSheet.create({
   panel: { backgroundColor: colors.surface, borderRadius: 22, padding: 18, marginBottom: 14, borderWidth: 1, borderColor: colors.border },
   panelHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
   panelTitle: { color: colors.text, fontSize: 15, fontWeight: '800', marginBottom: 4 },
-  panelLink: { color: colors.accent, fontSize: 12, fontWeight: '800' },
+  panelLink: { color: colors.accent, fontSize: 12, fontWeight: '800', paddingVertical: 9, paddingLeft: 8, marginVertical: -9 },
   donutRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 18, marginTop: 10 },
   legend: { flex: 1, minWidth: 130, gap: 9 },
   legendRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },

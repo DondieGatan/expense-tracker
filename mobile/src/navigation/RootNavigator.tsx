@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, ActivityIndicator, Text, StyleSheet } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, ActivityIndicator, Text, StyleSheet, Platform } from 'react-native';
 import { NavigationContainer, DarkTheme, DefaultTheme } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -11,6 +11,14 @@ export default function RootNavigator() {
   useWebFont();
   const { colors, isDark } = useTheme();
   const { user, loading, retryStatus } = useAuth();
+
+  // On web the page itself (behind and beside the app column) and the browser scrollbars follow the theme too.
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    document.documentElement.style.backgroundColor = colors.bg;
+    document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
+    document.body.style.backgroundColor = colors.bg;
+  }, [colors.bg, isDark]);
 
   const navTheme = {
     ...(isDark ? DarkTheme : DefaultTheme),

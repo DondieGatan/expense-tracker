@@ -77,6 +77,7 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
                 <Text style={styles.fieldLabel}>Email</Text>
                 <TextInput
                   ref={emailRef}
+                  accessibilityLabel="Email"
                   style={styles.fieldInput}
                   placeholderTextColor={colors.textMuted}
                   autoCapitalize="none"
@@ -91,6 +92,8 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
               </View>
               <AnimatedPressable
                 style={[styles.submitCircle, !canSubmit && styles.submitCircleDisabled]}
+                accessibilityRole="button"
+                accessibilityLabel="Send reset link"
                 onPress={onSubmit}
                 disabled={!canSubmit}
               >
@@ -146,7 +149,7 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
   card: {
     width: '100%', maxWidth: 380, backgroundColor: colors.bg,
     borderRadius: 28, borderWidth: 1, borderColor: colors.border, overflow: 'hidden',
-    shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 30, shadowOffset: { width: 0, height: 14 },
+    boxShadow: '0px 14px 30px rgba(0,0,0,0.3)',
     elevation: 8,
   },
   glow: { position: 'absolute', top: -45, left: -45 },
@@ -191,6 +194,6 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
   footerRow: { flexDirection: 'row', justifyContent: 'center', marginTop: 16 },
   footerLink: {
     color: colors.accent, fontFamily: webFontFamily, fontWeight: '700', fontSize: 13,
-    textDecorationLine: 'underline',
+    textDecorationLine: 'underline', paddingVertical: 9, paddingHorizontal: 2, marginVertical: -9,
   },
 });

@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View, Text, StyleSheet, TextInput, FlatList,
-  Alert, Platform,
+  Platform,
 } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,6 +24,7 @@ import { formatCurrency, formatDate, todayIso } from '../utils/format';
 import { categoryColor } from '../theme/colors';
 import type { Expense } from '../api/types';
 import DisplayText from '../components/DisplayText';
+import { confirmDestructive, notify } from '../utils/dialogs';
 
 type ListRow =
   | { type: 'header'; key: string; date: string; total: number }
@@ -82,19 +83,16 @@ export default function ExpensesScreen() {
   );
 
   const onDelete = (id: number, description: string) => {
-    Alert.alert('Delete expense', `Delete "${description}"?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          await api.delete(`/expenses/${id}`);
-          invalidateInsights();
-          if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          load(search, category);
-        },
-      },
-    ]);
+    confirmDestructive('Delete expense', `Delete "${description}"?`, 'Delete', async () => {
+      try {
+        await api.delete(`/expenses/${id}`);
+        invalidateInsights();
+        if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        load(search, category);
+      } catch {
+        notify('Could not delete', 'That expense could not be deleted. Please try again.');
+      }
+    });
   };
 
   const onExport = async () => {
@@ -127,7 +125,7 @@ export default function ExpensesScreen() {
         }
       }
     } catch {
-      Alert.alert('Export failed', 'Could not export your expenses. Please try again.');
+      notify('Export failed', 'Could not export your expenses. Please try again.');
     } finally {
       setExporting(false);
     }
@@ -161,7 +159,7 @@ export default function ExpensesScreen() {
           <DisplayText style={styles.pageTitle}>History</DisplayText>
           <Text style={styles.pageSubtitle}>{expenses.length} expense{expenses.length === 1 ? '' : 's'}{hasFilters ? ' match' : ''}</Text>
         </View>
-        <AnimatedPressable style={styles.exportBtn} onPress={onExport} disabled={exporting}>
+        <AnimatedPressable style={styles.exportBtn} onPress={onExport} disabled={exporting} accessibilityRole="button" accessibilityLabel="Export expenses as CSV">
           <DownloadIcon size={16} color={colors.text} />
         </AnimatedPressable>
       </View>

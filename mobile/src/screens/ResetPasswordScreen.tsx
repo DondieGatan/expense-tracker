@@ -89,6 +89,7 @@ export default function ResetPasswordScreen({ navigation, route }: Props) {
             <Text style={styles.fieldLabel}>Reset code</Text>
             <TextInput
               ref={codeRef}
+              accessibilityLabel="Reset code"
               style={styles.fieldInput}
               placeholderTextColor={colors.textMuted}
               keyboardType="number-pad"
@@ -110,6 +111,7 @@ export default function ResetPasswordScreen({ navigation, route }: Props) {
                 <Text style={styles.fieldLabel}>New password</Text>
                 <TextInput
                   ref={passwordRef}
+                  accessibilityLabel="New password"
                   style={styles.fieldInput}
                   placeholderTextColor={colors.textMuted}
                   secureTextEntry={!showPassword}
@@ -121,7 +123,7 @@ export default function ResetPasswordScreen({ navigation, route }: Props) {
                   onBlur={() => setFocusedField((f) => (f === 'password' ? null : f))}
                 />
               </View>
-              <AnimatedPressable style={styles.toggleVisibility} onPress={() => setShowPassword((v) => !v)}>
+              <AnimatedPressable style={styles.toggleVisibility} onPress={() => setShowPassword((v) => !v)} accessibilityRole="button" accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}>
                 <Animated.View key={showPassword ? 'off' : 'on'} entering={ZoomIn.duration(180)}>
                   {showPassword ? (
                     <EyeOffIcon size={16} color={colors.textMuted} />
@@ -132,6 +134,8 @@ export default function ResetPasswordScreen({ navigation, route }: Props) {
               </AnimatedPressable>
               <AnimatedPressable
                 style={[styles.submitCircle, !canSubmit && styles.submitCircleDisabled]}
+                accessibilityRole="button"
+                accessibilityLabel="Reset password"
                 onPress={onSubmit}
                 disabled={!canSubmit}
               >
@@ -193,7 +197,7 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
   card: {
     width: '100%', maxWidth: 380, backgroundColor: colors.bg,
     borderRadius: 28, borderWidth: 1, borderColor: colors.border, overflow: 'hidden',
-    shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 30, shadowOffset: { width: 0, height: 14 },
+    boxShadow: '0px 14px 30px rgba(0,0,0,0.3)',
     elevation: 8,
   },
   glow: { position: 'absolute', top: -45, left: -45 },
@@ -228,7 +232,7 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
   },
   passwordRow: { flexDirection: 'row', alignItems: 'center' },
   passwordCol: { flex: 1 },
-  toggleVisibility: { padding: 6, marginLeft: 2 },
+  toggleVisibility: { padding: 10, marginLeft: 0 },
   submitCircle: {
     width: 38, height: 38, borderRadius: 19, overflow: 'hidden', marginLeft: 6,
   },
@@ -240,6 +244,6 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
   footerText: { color: colors.textMuted, fontFamily: webFontFamily, fontSize: 13 },
   footerLink: {
     color: colors.accent, fontFamily: webFontFamily, fontWeight: '700', fontSize: 13,
-    textDecorationLine: 'underline',
+    textDecorationLine: 'underline', paddingVertical: 9, paddingHorizontal: 2, marginVertical: -9,
   },
 });

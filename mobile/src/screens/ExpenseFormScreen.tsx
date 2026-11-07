@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View, Text, TextInput, StyleSheet,
-  ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform, Alert,
+  ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -21,6 +21,7 @@ import { formatCurrency, formatDate, todayIso } from '../utils/format';
 import type { AppStackParamList } from '../navigation/types';
 import type { CategorizeResult, ParseResult, SuggestedExpense } from '../api/types';
 import DisplayText from '../components/DisplayText';
+import { confirmDestructive } from '../utils/dialogs';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'ExpenseForm'>;
 
@@ -36,18 +37,10 @@ function haptic(type: 'success' | 'error' | 'select') {
   else Haptics.selectionAsync();
 }
 
-// RN Web's Alert.alert() is a no-op stub, so a confirmation on web needs its
-// own path — this is the only delete entry point for the whole app on web,
-// since SwipeableRow renders as a plain non-swipeable wrapper there.
+// This is the only delete entry point for the whole app on web, since SwipeableRow renders as a plain
+// non-swipeable wrapper there.
 function confirmDelete(description: string, onConfirm: () => void) {
-  if (Platform.OS === 'web') {
-    if (window.confirm(`Delete "${description}"?`)) onConfirm();
-    return;
-  }
-  Alert.alert('Delete expense', `Delete "${description}"?`, [
-    { text: 'Cancel', style: 'cancel' },
-    { text: 'Delete', style: 'destructive', onPress: onConfirm },
-  ]);
+  confirmDestructive('Delete expense', `Delete "${description}"?`, 'Delete', onConfirm);
 }
 
 export default function ExpenseFormScreen({ route, navigation }: Props) {
@@ -225,12 +218,12 @@ export default function ExpenseFormScreen({ route, navigation }: Props) {
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.container}>
         <Animated.View entering={FadeIn.duration(350)} style={styles.headerRow}>
-          <AnimatedPressable style={styles.backLink} onPress={() => navigation.goBack()}>
+          <AnimatedPressable style={styles.backLink} onPress={() => navigation.goBack()} accessibilityRole="button" accessibilityLabel="Go back">
             <BackIcon size={16} color={colors.text} />
           </AnimatedPressable>
           <DisplayText style={styles.pageTitle}>{isEdit ? 'Edit Expense' : 'Add Expense'}</DisplayText>
           {isEdit ? (
-            <AnimatedPressable style={styles.deleteLink} onPress={onDelete} disabled={deleting}>
+            <AnimatedPressable style={styles.deleteLink} onPress={onDelete} disabled={deleting} accessibilityRole="button" accessibilityLabel="Delete expense">
               {deleting ? (
                 <ActivityIndicator size="small" color={colors.danger} />
               ) : (
@@ -461,15 +454,15 @@ const makeStyles = (colors: Colors, topInset: number) => StyleSheet.create({
   label: { color: colors.textMuted, fontSize: 12, marginBottom: 6, marginTop: 14 },
   input: {
     backgroundColor: colors.surface, borderRadius: 12, borderWidth: 1, borderColor: colors.border,
-    color: colors.text, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14,
+    color: colors.text, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, minHeight: 46,
   },
   textArea: { minHeight: 80, textAlignVertical: 'top' },
   fieldRow: { flexDirection: 'row', gap: 12 },
-  fieldHalf: { flex: 1 },
+  fieldHalf: { flex: 1, minWidth: 0 },
   chipGroup: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingVertical: 7, paddingHorizontal: 14, borderRadius: 999, backgroundColor: colors.surface2,
+    paddingVertical: 10, paddingHorizontal: 14, borderRadius: 999, backgroundColor: colors.surface2,
   },
   chipActive: { backgroundColor: colors.accent },
   chipText: { color: colors.textMuted, fontSize: 12, fontWeight: '600' },

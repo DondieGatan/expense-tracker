@@ -30,6 +30,7 @@ export default function DateField({ value, onChange }: Props) {
   if (Platform.OS === 'web') {
     return React.createElement('input', {
       type: 'date',
+      'aria-label': 'Date',
       value,
       onChange: (e: { target: { value: string } }) => onChange(e.target.value),
       style: {
@@ -41,6 +42,10 @@ export default function DateField({ value, onChange }: Props) {
         fontSize: 14,
         fontFamily: 'inherit',
         width: '100%',
+        boxSizing: 'border-box',
+        minWidth: 0,
+        height: 46,
+        outline: 'none',
         colorScheme: isDark ? 'dark' : 'light',
       },
     });

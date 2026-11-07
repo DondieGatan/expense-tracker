@@ -19,7 +19,7 @@ import Skeleton from '../components/Skeleton';
 import DisplayText from '../components/DisplayText';
 
 export default function BudgetScreen() {
-  const { colors } = useTheme();
+  const { colors, mode, setMode } = useTheme();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(colors, insets.top), [colors, insets.top]);
   const { user, updateCurrency, logout } = useAuth();
@@ -212,6 +212,30 @@ export default function BudgetScreen() {
           )}
         </Animated.View>
 
+        <Animated.View entering={FadeInDown.duration(450).delay(150)} style={styles.card}>
+          <Text style={styles.cardTitle}>Appearance</Text>
+          <Text style={styles.currencyHint}>Follow your device, or pick a look.</Text>
+          <View style={styles.segment} accessibilityRole="radiogroup">
+            {(['system', 'light', 'dark'] as const).map((option) => {
+              const active = mode === option;
+              return (
+                <AnimatedPressable
+                  key={option}
+                  style={[styles.segmentItem, active && styles.segmentItemActive]}
+                  onPress={() => setMode(option)}
+                  accessibilityRole="radio"
+                  aria-checked={active}
+                  accessibilityLabel={`${option === 'system' ? 'Match device' : option} appearance`}
+                >
+                  <Text style={[styles.segmentText, active && styles.segmentTextActive]}>
+                    {option === 'system' ? 'Auto' : option === 'light' ? 'Light' : 'Dark'}
+                  </Text>
+                </AnimatedPressable>
+              );
+            })}
+          </View>
+        </Animated.View>
+
         <Animated.View entering={FadeInDown.duration(450).delay(180)} style={styles.card}>
           <Text style={styles.cardTitle}>Account</Text>
           <Text style={styles.accountName}>{user?.fullName}</Text>
@@ -264,6 +288,11 @@ const makeStyles = (colors: Colors, topInset: number) => StyleSheet.create({
   button: { backgroundColor: colors.accent, borderRadius: 999, paddingVertical: 14, alignItems: 'center', marginTop: 18 },
   buttonDisabled: { opacity: 0.7 },
   buttonText: { color: colors.accentContrast, fontWeight: '800', fontSize: 15 },
+  segment: { flexDirection: 'row', backgroundColor: colors.bg, borderRadius: 999, borderWidth: 1, borderColor: colors.border, padding: 4, gap: 4 },
+  segmentItem: { flex: 1, height: 38, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
+  segmentItemActive: { backgroundColor: colors.accent },
+  segmentText: { color: colors.textMuted, fontSize: 13, fontWeight: '700' },
+  segmentTextActive: { color: colors.accentContrast },
   accountName: { color: colors.text, fontSize: 15, fontWeight: '700', marginBottom: 2 },
   logoutBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 6,
